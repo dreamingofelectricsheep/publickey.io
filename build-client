@@ -1,1 +1,1 @@
-cd ./client; ls | xargs ../chl > ../mailbox.html; cd ..
+cd ./client; ls | xargs ../bin/compile-html > ../mailbox.html; cd ..

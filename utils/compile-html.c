@@ -32,7 +32,6 @@ int main(int argc, char ** argv) {
 
 	buffer = malloc(s);
 
-	cfile("require");
 	for(int i = 1; i < argc; i++) {
 		cfile(argv[i]); }
 
