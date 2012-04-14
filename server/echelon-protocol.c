@@ -20,7 +20,7 @@ enum echsuitetag {
 struct echtop {
 	uint16_t tag; 
 	uint16_t length; };
-
+/*
 struct echkey {
 	union {
 		uint8_t x[32];
@@ -37,6 +37,9 @@ struct echsuite {
 struct echsig {
 	uint8_t r[32];
 	uint8_t s[32]; };
+
+typedef uint8_t echseckey[32];
+
 
 buffer_t echelon_encrypt(buffer_t out, buffer_t in, echkey recipient) {
 
@@ -57,12 +60,11 @@ buffer_t echelon_encrypt(buffer_t out, buffer_t in, echkey recipient) {
 	EC_POINT_get_affine_coordinates_GFp(curv, encrypted, x, y, 0);
 
 
-
 	struct { 
 		struct echtop suitetop, 
 		struct echsuite suite,
 		struct echtop enctop,
-		uint8_t enc[16]; } * packet = out.ptr;
+		uint8_t enc[128]; } * packet = out.ptr;
 
 	paket->suitetop.tag = echtag_suite;
 	paket->suitetop.length = sizeof(struct echsuite);
@@ -102,7 +104,11 @@ buffer_t echelon_encrypt(buffer_t out, buffer_t in, echkey recipient) {
 
 	CRYPTO_gcm128_release(gcm);
 
-	out.length = in.length + sizeof(*packet) - 16;
+	struct ECDSA_SIG_st * sig = ECDSA_do_sign(tag, 16, 
+
+	
+
+	out.length = in.length + sizeof(*packet);
 
 	return out; }
 
@@ -121,4 +127,4 @@ buffer_t echelon_encrypt(buffer_t out, buffer_t in, echkey recipient) {
 
 
 
-
+*/
