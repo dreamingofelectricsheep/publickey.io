@@ -1,0 +1,86 @@
+var module
+
+
+(function() {	
+
+	Object.defineProperty(Object.prototype, 'each', { value: function(fun) {
+		for(var i in this) {
+			if(this.hasOwnProperty(i))
+				fun(i, this[i], this) } } })
+
+	Object.defineProperty(Array.prototype, 'each', { value: function(fun) {
+		for(var i = 0 ; i < this.length ; ++i) {
+			fun(i, this[i], this) } } })
+
+	var head = document.getElementsByTagName('head')[0]
+	
+	var fetch = function(address, ready, error) {
+		var script = document.createElement('script')
+		
+		script.type = 'text/javascript'
+		script.onerror = function() { throw("Error loading " + address) }
+		script.src = address 
+		head.appendChild(script) }
+
+			
+
+	var manager = {
+		list: {},
+		get: function(id, donotfetch) {
+			var m = this.list[id]
+
+			if(m == undefined) {
+				var n = this
+				m = this.list[id] = {
+					id: id,
+					ready: false,
+					required: {},
+					depends: {},
+					finished: function(payload, depends) {
+						var self = this
+						self.finished = undefined
+						self.payload = payload
+
+						depends.each(function(k, v) {
+							d = n.get(v)
+							d.required[self.id] = self
+
+							self.depends[d.id] = d })
+
+						self.check() },
+
+					check: function() {
+						var ready = true
+
+						this.depends.each(function(k, v) {
+							if(v.ready == false) ready = false  })
+
+						if(ready) {
+							this.check = function() {}
+							this.run() } },
+
+					run: function() {
+						this.run = undefined
+
+						if(typeof this.payload == 'function') {
+							var m = this
+							this.payload = this.payload(function(id) { return m.depends[id].payload }) }
+
+
+						this.ready = true
+
+						this.required.each(function(k, v) { v.check() }) } }
+
+				if(donotfetch != true) 
+					fetch(id) }
+
+			return m } }
+
+	module = function(id, options, payload) {
+		var m = manager.get(id, true)
+
+		if(m.payload != undefined) throw("Module " + id + " already loaded.")
+		
+		m.finished(payload, options.depends ? options.depends : []) }
+    
+})()

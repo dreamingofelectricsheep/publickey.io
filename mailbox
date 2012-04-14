@@ -1,0 +1,46 @@
+module('main', { depends: ['browser', 'html'] }, function(require) {
+	var dom = require('browser').document
+
+	var body = require('browser').body
+	var html = require('html')
+
+	with(html) {
+		body.appendChild(div({ id: "search-tips" }, 
+			ul(
+				li("Search ", span({ class: "syntax" }, 
+					"from Jerry"), " to display emails from Jerry"),
+				li("Minus sign hides results containing the ", 
+					span({ class: "syntax" }, "-word")),
+				li("You can use ", span({ class: "syntax" }, 
+					"/reg(e|x)p*[syn]t+a+x+/"))),
+
+			div({ id: "search-box" },
+				span({ id: "search-icon" }),
+				input({ type: "text", spellcheck: "false", 
+					autocomplete: "on", placeholder: "Search" })))) }
+
+	var search_tips = dom.getElementById('search-tips')
+	var search_box = dom.getElementById('search-box').lastChild
+
+	search_box.onblur = function() {
+		search_box.parentNode.style.outline = 'none'
+		search_tips.style.visibility = 'hidden'; }	
+	search_box.onfocus = function() {
+		search_box.parentNode.style.outline = 'orange solid 2px'
+		search_tips.style.visibility = 'visible'; }
+
+
+
+	with(html) {
+		body.appendChild(div({ class: "snippet-box" },
+			b({ class: "title" }, "Hello john..."),
+			p({ class: "snippet" }, "Lorem ipsum dolor sit amet," \ 
+				"consectetur adipiscing elit. Donec a diam lectus..."),
+			p({ class: "tagline" }, "from ", 
+				b("jerry"), " 15 minutes ago."))) }
+
+
+
+})
+
+
