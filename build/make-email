@@ -1,0 +1,1 @@
+gcc -std=c1x ./server/make-email.c -o ./bin/make-email -lssl

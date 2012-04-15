@@ -37,18 +37,16 @@ int main(int argc, char ** argv) {
 	EC_POINT_get_affine_coordinates_GFp(curve, pub, x, y, 0);
 
 	struct {
-		struct echtop top;
 		uint8_t y;
-		uint8_t x[32]; } packet = 
-	{ 
-		{ echtag_publickey, 33 },
-		y->neg };
-
-	for(int i = 0; i < 32; i++) { packet.x[i] = 0; }
+		uint8_t x[32]; } pubkey;
 	
-	BN_bn2bin(x, packet.x);
+	pubkey.y = y->neg;
 
-	write(1, &packet, sizeof(packet));
+	for(int i = 0; i < 32; i++) { pubkey.x[i] = 0; }
+	
+	BN_bn2bin(x, pubkey.x);
+
+	write(1, &pubkey, sizeof(pubkey));
 
 	return 0; }
 

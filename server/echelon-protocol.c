@@ -1,46 +1,15 @@
 #include <stdint.h>
 #include "bytebuf.c"
 
+#include <openssl/obj_mac.h>
 #include <openssl/ec.h>
+#include <openssl/ecdsa.h>
 #include <openssl/modes.h>
 #include <openssl/sha.h>
 #include <openssl/aes.h>
 #include <openssl/rand.h>
 
-enum echtag {
-	echtag_plaintext,
-	echtag_ciphertext,
-	echtag_suite,
-	echtag_signature,
-	echtag_publickey };
-
-enum echsuitetag {
-	echsuite_first };
-
-struct echtop {
-	uint16_t tag; 
-	uint16_t length; };
 /*
-struct echkey {
-	union {
-		uint8_t x[32];
-		struct {
-			uint8_t iv[16];
-			uint8_t aes[16]; } material; };
-	uint8_t y; };
-
-
-struct echsuite {
-	uint16_t suite;
-	echkey encrypted; };
-
-struct echsig {
-	uint8_t r[32];
-	uint8_t s[32]; };
-
-typedef uint8_t echseckey[32];
-
-
 buffer_t echelon_encrypt(buffer_t out, buffer_t in, echkey recipient) {
 
 	struct ec_group_st * curve = EC_GROUP_new_by_curve_name(NID_secp256k1);
