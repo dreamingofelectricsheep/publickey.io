@@ -14,11 +14,14 @@
 #include <sys/time.h>
 #include "echelon-protocol.c"
 
-	
 
-struct cache {
+struct peer_data;
+
+typedef (*peer_fun)(struct peer_data *, int events);
+
+struct peer_data {
 	int fd;
-	uint8_t ip[16];
+	
 	uint16_t port; };
 
 
