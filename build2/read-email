@@ -1,0 +1,1 @@
+gcc -std=c1x ./server/read-email.c -o ./bin/read-email -lssl

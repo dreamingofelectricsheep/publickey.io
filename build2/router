@@ -1,0 +1,1 @@
+gcc -std=c1x ./server/router.c -o ./bin/router -lssl -D_POSIX_C_SOURCE=200112L $1

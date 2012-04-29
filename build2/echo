@@ -1,0 +1,1 @@
+gcc -std=c1x ./server/echo.c -o ./bin/echo -D_POSIX_C_SOURCE=200112L
