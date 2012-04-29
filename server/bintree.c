@@ -2,6 +2,29 @@
 #include <string.h>
 #include <stdlib.h>
 
+/*
+
+#define bintree(var) bintreename ## var
+
+typedef enum {
+	bintree(less),
+	bintree(equal),
+	bintree(greater) } bintree(cmp_t);
+
+typedef int bintree(key_t);
+typedef float bintree(payload_t);
+
+bintree(cmp_t) bintree(cmp_fun)(bintree(key_t) first, bintree(key_t) second) {
+	if(first == second) return bintree(equal);
+	if(first < second) return bintree(less);
+	return bintree(greater); }
+
+#include "bintree.c"
+
+#undef bintree
+
+*/
+
 struct bintree(node) {
 	struct bintree(node) * left, * right;
 	bintree(key_t) key;

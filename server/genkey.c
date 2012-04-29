@@ -14,7 +14,6 @@
 
 
 
-
 int main(int argc, char ** argv) {
 
 	struct ec_group_st * curve = EC_GROUP_new_by_curve_name(NID_secp256k1);

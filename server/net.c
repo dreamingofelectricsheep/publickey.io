@@ -10,10 +10,11 @@
 #include <stdbool.h>
 
 
-// Before including this file defile a struct peer_user_data.
+// Before including this file define a struct peer_user_data.
 
+struct net_st;
 struct peer_data;
-typedef void (*peer_fun)(struct peer_data *, int events);
+typedef void (*peer_fun)(struct net_st *, struct peer_data *, int events);
 struct peer_data {
 	int fd;
 	peer_fun fun;
@@ -22,10 +23,10 @@ struct peer_data {
 	struct peer_user_data data; };
 
 struct peer_data_listen;
-typedef void (*peer_fun_listen)(struct peer_data_listen *, int events);
+typedef void (*peer_fun_listen)(struct net_st *, struct peer_data_listen *, int events);
 struct peer_data_listen {
 	int fd;
-	peer_fun_int fun2;
+	peer_fun_listen fun2;
 	peer_fun fun; };
 
 struct net_st {
@@ -33,29 +34,29 @@ struct net_st {
 	struct epoll_event * events;
 	struct peer_data * peers;
 	size_t peers_length;
-	size_t peers_max; }
+	size_t peers_max; };
 
-void netaccept(struct peer_data_listen * p, int events) {
+void netaccept(struct net_st * net, struct peer_data_listen * p, int events) {
 	struct sockaddr_in6 def;
 	socklen_t len = sizeof(def);
 
-	int socket = accept(p->fd, &definition, &len);
+	int socket = accept(p->fd, (struct sockaddr *) &def, &len);
 
 	struct epoll_event e;
 	e.events = EPOLLIN | EPOLLET;
 	struct peer_data * n = e.data.ptr = net->peers + net->peers_length;
 	net->peers_length++;
-	n->fd = sock;
+	n->fd = socket;
 	n->fun = p->fun;
 	n->port = ntohs(def.sin6_port);
 
-	memcpy(p->ip, def.sin6_addr.s6_addr, 16);
+	memcpy(n->ip, def.sin6_addr.s6_addr, 16);
 
 	if(epoll_ctl(net->epoll, EPOLL_CTL_ADD, socket, &e) < 0) {
-		printf("Listener epoll failed"); }
+		printf("Listener epoll failed"); } }
 
 
-int netsocket(struct net_st * net, int type, uint16_t port, peer_fun fun) 
+int netsocket(struct net_st * net, int type, uint16_t port, peer_fun fun) {
 	int sock = socket(AF_INET6, type, 0);
 	
 	struct sockaddr_in6 def = { AF_INET6, htons(port), 0, 0, 0 };
@@ -69,9 +70,8 @@ int netsocket(struct net_st * net, int type, uint16_t port, peer_fun fun)
 
 	struct epoll_event e;
 	e.events = EPOLLIN | EPOLLET;
-	 e.data.ptr = net->peers + net->peers_length;
+	e.data.ptr = net->peers + net->peers_length;
 	net->peers_length++;
-	p->fd = sock;
 
 	if(type == SOCK_STREAM) {
 		struct peer_data_listen * p = e.data.ptr;
@@ -83,7 +83,7 @@ int netsocket(struct net_st * net, int type, uint16_t port, peer_fun fun)
 		p->fd = sock;
 		p->fun = fun; }
 
-	if(epoll_ctl(net->epoll, EPOLL_CTL_ADD, socket, &e) < 0)
+	if(epoll_ctl(net->epoll, EPOLL_CTL_ADD, sock, &e) < 0)
 		printf("Listener epoll failed");
 
 	return sock; }
@@ -102,13 +102,14 @@ void net(struct net_st * net) {
 		int events_ready = epoll_wait(net->epoll, net->events, 1024, -1);
 
 		for(int i = 0; i < events_ready; i++) {
-			int events = net->events[i].evens;
-			struct peer_data * d = net->events[i].ptr;
+			printf("eventing!");
+			int events = net->events[i].events;
+			struct peer_data * d = net->events[i].data.ptr;
 
-			if(events & EPOLL_HUP) {
+			if(events & EPOLLHUP) {
 				close(d->fd); }
 			else {
-				d->fun(d, events); } } } }
+				d->fun(net, d, events); } } } }
 					
 
 

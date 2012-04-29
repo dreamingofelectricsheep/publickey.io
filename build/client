@@ -1,1 +1,0 @@
-cd ./client; ls | xargs ../bin/compile-html > ../mailbox.html

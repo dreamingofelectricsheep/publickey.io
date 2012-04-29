@@ -11,7 +11,7 @@ typedef struct {
 	union {
 		void * ptr;
 		uint8_t * bytes; };
-	size_t length; } utf8_t, buffer_t;
+	size_t length; } utf8_t, buffer_t, byetes;
 
 size_t min(size_t f, size_t s) {
 	return f < s ? f : s; }
