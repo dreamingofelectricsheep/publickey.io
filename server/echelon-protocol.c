@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "bytebuf.c"
+#include "bytes.c"
 
 #include <openssl/obj_mac.h>
 #include <openssl/ec.h>
@@ -9,6 +9,29 @@
 #include <openssl/aes.h>
 #include <openssl/rand.h>
 
+#pragma pack(push)
+#pragma pack(1)
+
+enum ep_tag {
+	ep_plaintext,
+	ep_aes256_ciphertext,
+	ep_secp256k1_ciphertext,
+	ep_secp256k1_signature,
+	ep_secp256k1_public_key };
+	
+struct ep_signature {
+	uint16_t tag;
+	uint16_t length;
+	uint8_t r[32];
+	uint8_t s[32]; };
+
+struct ep_public_key {
+	uint16_t tag;
+	uint16_t length;
+	uint8_t y;
+	uint8_t x[32]; };
+
+#pragma pack(pop)
 /*
 buffer_t echelon_encrypt(buffer_t out, buffer_t in, echkey recipient) {
 

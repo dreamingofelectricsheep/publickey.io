@@ -11,14 +11,19 @@
 
 
 
-
-
-
-
 int main(int argc, char ** argv) {
 
+	if(argc != 2) {
+		printf("Usage:\npublic-key key\n");
+		return 0; }
+
 	uint8_t bytes[32];
-	read(0, bytes, 32);
+
+	{
+		int keyfile = open(argv[1], O_RDONLY);
+		read(keyfile, bytes, 32);
+		close(keyfile);
+	}
 
 	struct bignum_st * key = BN_bin2bn(bytes, 32, 0);
 
@@ -30,23 +35,16 @@ int main(int argc, char ** argv) {
 	EC_POINT_mul(curve, pub, 0, g, key, 0); 
 
 
-	struct bignum_st * x = BN_new();
-	struct bignum_st * y = BN_new();
 
 
-	EC_POINT_get_affine_coordinates_GFp(curve, pub, x, y, 0);
 
-	struct {
-		uint8_t y;
-		uint8_t x[32]; } pubkey;
-	
-	pubkey.y = y->neg;
+	struct ep_public_key pubkey = { ep_secp256k1_public_key, 33 };
 
-	for(int i = 0; i < 32; i++) { pubkey.x[i] = 0; }
-	
-	BN_bn2bin(x, pubkey.x);
+	EC_POINT_point2oct(curve, pub, 2, &pubkey.y, 33, 0);	
 
+	pubkey.y -= 2;
 	write(1, &pubkey, sizeof(pubkey));
+
 
 	return 0; }
 
