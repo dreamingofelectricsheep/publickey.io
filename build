@@ -1,1 +1,1 @@
-gcc -std=c1x ./server/$1.c -o ./bin/$1 -lssl -D_POSIX_C_SOURCE=200112L $2
+gcc -std=c1x ./src/$1.c -o ./bin/$1 -lssl -D_POSIX_C_SOURCE=200112L $2
