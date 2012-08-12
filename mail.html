@@ -1,0 +1,36 @@
+<html>
+<head>
+<title>Mail</title>
+</head>
+<body></body>
+<script>
+
+var html = {};
+
+
+html.create_element = function(tagname, rest) {
+	var t = document.createElement(tagname);
+	if(rest.length > 0) {
+		var i = 0;
+		if(typeof rest[0] == "object" && rest[0].innerHTML == undefined) {
+			i = 1;
+			for(var k in rest[0]) {
+				t.setAttribute(k, rest[0][k]); } }
+
+		for(; i < rest.length; i++) {
+			var a = rest[i];
+			if(typeof a == 'string') 
+				a = document.createTextNode(a);
+			t.appendChild(a); } }
+	return t };
+var html.tags = ['body', 'head', 'div', 'i', 'b'];
+html.div = function() { return html.create_element('div', arguments); }
+
+var body = document.getElementsByTagName('body')[0];
+
+var t;
+
+
+
+</script>
+</html>
