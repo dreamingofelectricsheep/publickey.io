@@ -311,8 +311,11 @@ void decrypt(char ** argv) {
 
 
 
+/*
+handshake consists primarily of uint32_t version 
+field - the rest is determined by it's value.
 
-
+*/
 
 
 int main(int argc, char ** argv) {

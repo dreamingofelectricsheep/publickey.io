@@ -14,11 +14,15 @@
 #define debug(d...) { printf("[f: %s l: %d] ", __FILE__, __LINE__); \
 	printf(d); printf("\n"); }
 
+void makehandshake() {
 
+
+}
 	
 
 int main(int argc, char ** argv) {
 
+	uint16_t port = 25;
 	int epoll = epoll_create(1);
 	struct epoll_event events[1024];
 
@@ -27,7 +31,7 @@ int main(int argc, char ** argv) {
 	int r = true;
 	setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &r, sizeof(r));
 
-	struct sockaddr_in6 def = { AF_INET6, htons(80), 0, 0, 0 };
+	struct sockaddr_in6 def = { AF_INET6, htons(port), 0, 0, 0 };
 	if(bind(listener, (struct sockaddr *) &def, sizeof(def))) {
 		debug("Bind failed!");
 		return -1; }
@@ -65,29 +69,23 @@ int main(int argc, char ** argv) {
 
 		int socket = accept(data->fd, (struct sockaddr *) &def, &len);
 
-		// Clients have their own "in" callback.
-		int in(int epoll, struct sockdata * data) {
+		int in_first(int epoll, struct sockdata * data) {
 			uint8_t buffer[4096];
-			debug("Received data.  ------------");
+			debug("Received data.");
 			ssize_t length = recv(data->fd, buffer, 4096, 0);
 			debug("%d bytes of data.", length);
 			if(length <= 0 || length > 4096) {
 				debug("Ending connection.")
 				kill(epoll, data);
 				return 0; }
-
 			write(0, buffer, length);
-			if(buffer[0] == 'G') {
-				char * page = "HTTP/1.1 200 OK\r\n"
-"Content-Length: 5\r\n"
-"Content-Type: text/html\r\n"
-"\r\nhello";
-				send(data->fd, page, strlen(page), 0); }
-			debug("----------------------------");
-			return 0; }
+			char * m = "250 Ok\r\n";
+			write(data->fd, m, strlen(m));
+			return 0;
+		}
 
 		struct sockdata * d = malloc(sizeof(struct sockdata));
-		*d = (struct sockdata) { socket, &in, &err, &hup, &kill };
+		*d = (struct sockdata) { socket, &in_first, &err, &hup, &kill };
 		
 		struct epoll_event e;
 		e.events = EPOLLIN | EPOLLET;
@@ -96,6 +94,8 @@ int main(int argc, char ** argv) {
 		if(epoll_ctl(epoll, EPOLL_CTL_ADD, socket, &e) < 0) {
 			debug("Accept epoll_ctl failed"); return -1; }
 
+		char * m = "220 outerechelon.org\r\n";
+		write(socket, m, strlen(m));
 		return 0;
 	}
 		

@@ -93,16 +93,10 @@ bytes bread(bytes mem) {
 	ssize_t r = read(0, mem.as_uint8, mem.length);
 	return (bytes) { mem.as_uint8, r }; }
 
-bytes bcat(bytes dst, size_t args, ...) {
-	va_list ap;
+bytes bcat(bytes dst, bytes arg1, bytes arg2) {
 	bytes r = dst;
-
-	va_start(ap, args);
-	for(int i = 0; i < args; i++) {
-		bytes a = va_arg(ap, bytes);
-		bcpy(r, a);
-		r = bcut(r, a.length, 0); }
-	va_end(ap);
+	bcpy(r, arg1); r = bcut(r, arg1.length, 0); }
+	bcpy(r, arg2); r = bcut(r, arg2.length, 0); }
 
 	return (bytes) { dst.as_uint8, dst.length - r.length }; }
 
