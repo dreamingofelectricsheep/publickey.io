@@ -14,6 +14,14 @@
 #define debug(d...) { printf("[f: %s l: %d] ", __FILE__, __LINE__); \
 	printf(d); printf("\n"); }
 
+#include <openssl/obj_mac.h>
+#include <openssl/ec.h>
+#include <openssl/ecdsa.h>
+#include <openssl/modes.h>
+#include <openssl/sha.h>
+#include <openssl/aes.h>
+#include <openssl/rand.h>
+
 void makehandshake() {
 
 
