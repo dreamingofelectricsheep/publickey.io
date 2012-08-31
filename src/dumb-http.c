@@ -11,16 +11,43 @@
 #include <string.h>
 #include <errno.h>
 
-#define debug(d...) { printf("[f: %s l: %d] ", __FILE__, __LINE__); \
-	printf(d); printf("\n"); }
+#include "bytes.c"
+
+struct objdata;
+typedef int (*objfun)(int epoll, struct objdata * blob);
+struct objdata {
+	int fd;
+	objfun in, err, hup, kill; };
 
 
 	
+int eventloop(int epollfd) {
+	int max_events = 1024;
+	struct epoll_event * buffer = malloc(max_events * sizeof(*buffer));
+	while(true) {
+		int ready = epoll_wait(epollfd, buffer, max_events, -1);
+
+		debug("Events ready: %d", ready);
+		for(int i = 0; i < ready; i++) {
+			int events = buffer[i].events;
+			struct objdata * d = buffer[i].data.ptr;
+			objfun fun;
+			int r = 0;
+			
+			if(events & EPOLLERR) r += d->err(epollfd, d);
+			else {
+				if(events & EPOLLIN) r += d->in(epollfd, d);
+				if(events & EPOLLHUP) r += d->hup(epollfd, d); }
+
+			if(r) { 
+				debug("Socket callback failed")
+				d->kill(epollfd, d); }
+			}} }
+
 
 int main(int argc, char ** argv) {
 
 	int epoll = epoll_create(1);
-	struct epoll_event events[1024];
 
 	int listener = socket(AF_INET6, SOCK_STREAM, 0);
 	
@@ -33,32 +60,26 @@ int main(int argc, char ** argv) {
 		return -1; }
 
 	
-	struct sockdata;
-	typedef int (*sockfun)(int epoll, struct sockdata * blob);
-	struct sockdata {
-		int fd;
-		sockfun in, err, hup, kill; };
 
-
-	int kill(int epoll, struct sockdata * data) {
+	int kill(int epoll, struct objdata * data) {
 		// Don't worry, epoll concatenates events on the same destriptor.
 		debug("Terminating!");
 		close(data->fd);
 		free(data);
 		return 0; }
 
-	int err(int epoll, struct sockdata * data ) {
+	int err(int epoll, struct objdata * data ) {
 		debug("Receiving error: %s", strerror(errno));
 		data->kill(epoll, data);
 		return 0; }
 
-	int hup(int epoll, struct sockdata * data ) {
+	int hup(int epoll, struct objdata * data ) {
 		debug("Hangup received.");
 		data->kill(epoll, data);
 		return 0; }
 
 
-	int in(int epoll, struct sockdata * data) {
+	int in(int epoll, struct objdata * data) {
 		debug("Accepting a new connection.");
 		struct sockaddr_in6 def;
 		socklen_t len = sizeof(def);
@@ -66,7 +87,7 @@ int main(int argc, char ** argv) {
 		int socket = accept(data->fd, (struct sockaddr *) &def, &len);
 
 		// Clients have their own "in" callback.
-		int in(int epoll, struct sockdata * data) {
+		int in(int epoll, struct objdata * data) {
 			uint8_t buffer[4096];
 			debug("Received data.  ------------");
 			ssize_t length = recv(data->fd, buffer, 4096, 0);
@@ -86,8 +107,8 @@ int main(int argc, char ** argv) {
 			debug("----------------------------");
 			return 0; }
 
-		struct sockdata * d = malloc(sizeof(struct sockdata));
-		*d = (struct sockdata) { socket, &in, &err, &hup, &kill };
+		struct objdata * d = malloc(sizeof(struct objdata));
+		*d = (struct objdata) { socket, &in, &err, &hup, &kill };
 		
 		struct epoll_event e;
 		e.events = EPOLLIN | EPOLLET;
@@ -100,7 +121,7 @@ int main(int argc, char ** argv) {
 	}
 		
 
-	struct sockdata listenerdata = { listener, &in, &err, &hup, &kill };
+	struct objdata listenerdata = { listener, &in, &err, &hup, &kill };
 
 	
 	struct epoll_event e;
@@ -113,24 +134,7 @@ int main(int argc, char ** argv) {
 	listen(listener, 1024);
 
 
-	while(true) {
-		int ready = epoll_wait(epoll, events, 1024, -1);
-
-		debug("Events ready: %d", ready);
-		for(int i = 0; i < ready; i++) {
-			int ev = events[i].events;
-			struct sockdata * d = events[i].data.ptr;
-			sockfun fun;
-			
-			if(ev & EPOLLHUP) fun = d->hup;
-			else if(ev & EPOLLERR) fun = d->err;
-			else if(ev & EPOLLIN) fun = d->in;
-
-			if(fun(epoll, d)) { 
-				debug("Socket callback failed")
-				d->kill(epoll, d); }
-			}}
-
+	eventloop(epoll);
 	return 0; }
 
 

@@ -9,6 +9,9 @@
 #include <stdarg.h>
 #include <fcntl.h>
 
+#define debug(d...) printf("[f: %s l: %d] ", __FILE__, __LINE__); \
+	printf(d); printf("\n"); 
+
 #define PP_NARG(...) \
          PP_NARG_(__VA_ARGS__,PP_RSEQ_N())
 #define PP_NARG_(...) \
@@ -31,6 +34,7 @@
          9,8,7,6,5,4,3,2,1,0
 
 #define B(...) (bytes) { (char[]) { __VA_ARGS__ }, PP_NARG(__VA_ARGS__) }
+#define Bs(s) (bytes { s, sizeof(s) }
 
 typedef struct {
 	union {
@@ -79,7 +83,7 @@ bytes bfromint(int number, bytes buf) {
 			buf.as_uint8[i - j - 1] = t; }
 		return (bytes) { buf.as_uint8, i}; } }
 
-bytes bcut(bytes string, size_t start, size_t end) {
+bytes bslice(bytes string, size_t start, size_t end) {
 	if(end > 0) { return (bytes) { string.as_uint8 + start, end - start }; }
 	else return (bytes) { string.as_uint8 + start, string.length + end - start, }; }
 
@@ -95,8 +99,8 @@ bytes bread(bytes mem) {
 
 bytes bcat(bytes dst, bytes arg1, bytes arg2) {
 	bytes r = dst;
-	bcpy(r, arg1); r = bcut(r, arg1.length, 0); }
-	bcpy(r, arg2); r = bcut(r, arg2.length, 0); }
+	bcpy(r, arg1); r = bslice(r, arg1.length, 0); 
+	bcpy(r, arg2); r = bslice(r, arg2.length, 0); 
 
 	return (bytes) { dst.as_uint8, dst.length - r.length }; }
 
@@ -120,20 +124,6 @@ bfound bfind(bytes in, bytes what) {
 
 int bcmp(bytes first, bytes second) {
 	size_t length = min(first.length, second.length);
-
-	for(int i = 0; i < length; i++) {
-		if(first.as_uint8[i] < second.as_uint8[i]) return -1;
-		if(first.as_uint8[i] > second.as_uint8[i]) return 1; }
-
-	if(first.length != second.length) return length;
-	return 0; }
-
-
-uint64_t bhash(bytes s) {
-	uint64_t u = 0;
-	for(int i = 0; i < s.length; i++) {
-		u ^= ((uint64_t) s.as_uint8[i]) << (i % 8); }
-
-	return u; } 
+	return memcmp(first.as_void, second.as_void, length); }
 
 #endif
