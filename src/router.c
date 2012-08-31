@@ -11,6 +11,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include <time.h>
+
 #include "bytes.c"
 
 struct objdata;
@@ -58,7 +60,7 @@ int bintree(cmp_fun)(bintree(key_t) first, bintree(key_t) second) {
 #undef bintree
  
 
-void pingfun(struct pingfunctordata * data) {
+/*void pingfun(struct pingfunctordata * data) {
 	void fun(struct peertreenode * n, void * data) {
 		struct sockaddr_in6 addr = 
 			{ AF_INET6, n->key.port, 0,
@@ -69,7 +71,7 @@ void pingfun(struct pingfunctordata * data) {
 		sendto(*ppingfd, s, 256, 0, &addr, sizeof(addr)); }
 		
 	peertreepreorder(data->peers, &fun, &data->fd);
-
+*/
 
 int main(int argc, char ** argv) {
 
@@ -105,38 +107,74 @@ int main(int argc, char ** argv) {
 		data->kill(epoll, data);
 		return 0; }
 
-
+	struct routerdata { struct objdata obj; struct peertreenode * p; }; 
 	int in(int epoll, struct objdata * data) {
 		debug("Incoming packet.");
-		struct sockaddr_in6 def;
-		socklen_t len = sizeof(def);
+		struct sockaddr_in6 src_addr;
+		socklen_t addrlen = sizeof(src_addr);
+
+		size_t len = 4096;
+		uint8_t buf[len];
+
+		ssize_t r = recvfrom(data->fd, buf, len, 0, (void *)&src_addr, &addrlen);
+		struct peertreenode ** p = (void *) (data + 1);
+		peertreekey_t key = { src_addr.sin6_port, src_addr.sin6_addr };
+		
+		time_t t = time(0);
+		peertreepush(p, key, t);
 
 		return 0;
 	}
 		
 
-	struct objdata pingfddata = { pingfd, &in, &err, &hup, &kill };
+	struct routerdata pd = 
+		{ { pingfd, &in, &err, &hup, &kill }, 0 };
 
 
 	{	
 		struct epoll_event e;
 		e.events = EPOLLIN; // | EPOLLET;
-		e.data.ptr = &pingfddata;
+		e.data.ptr = &pd;
 
 		if(epoll_ctl(epoll, EPOLL_CTL_ADD, pingfd, &e) < 0) {
 			debug("Listener epoll_ctl failed"); return -1; }
 	}
 
+	if(argc == 2 && strcmp(argv[0], "-i")) {
+		printf("Interactive mode. Commands: list, add, remove, ping.\n");
+
+
+
+		int in(int epoll, struct objdata * obj) { 
+			size_t len = 4096;
+			uint8_t buf[len];
+			debug("Received data from terminal!");
+			ssize_t r = read(0, buf, len);
+			write(1, buf, r);
+			return 0; }
+		struct objdata * data = malloc(sizeof(struct objdata));
+		*data = (struct objdata) { 0, &in, &err, &hup, &kill };
+
+
+		{	
+			struct epoll_event e;
+			e.events = EPOLLIN; // | EPOLLET;
+			e.data.ptr = data;
+
+			if(epoll_ctl(epoll, EPOLL_CTL_ADD, 0, &e) < 0) {
+				debug("Stdin epoll_ctl failed"); return -1; }
+		}
+
+
+	}
 
 	eventloop(epoll);
 	return 0; }
 
 
 
-
+/*
 int main(int argc, char ** argv) {
-	if(argc == 2 && strcmp(argv[0], "-i")) {
-		printf("Interactive mode. Commands: list, add, remove, ping.\n"); }
 
 		
 	int pingfd = timerfd_create(CLOCK_REALTIME, 0);
@@ -164,29 +202,7 @@ int main(int argc, char ** argv) {
 
 	tp.tv_sec += 3072;
 	timerfd_settime(hupfd, 0, &tp, 0);
-	
-	/* main program loop */
-	int max_events = 1024;
-	struct epoll_events = malloc(sizeof(struct epoll_event) * max_events);
-	while(true) {
-		int ready = epoll_wait(epoll, events, 1024, -1);
-
-		debug("Events ready: %d", ready);
-		for(int i = 0; i < ready; i++) {
-			int ev = events[i].events;
-			struct sockdata * d = events[i].data.ptr;
-			sockfun fun;
-			
-			if(ev & EPOLLHUP) fun = d->hup;
-			else if(ev & EPOLLERR) fun = d->err;
-			else if(ev & EPOLLIN) fun = d->in;
-
-			if(fun(epoll, d)) { 
-				debug("Socket callback failed")
-				d->kill(epoll, d); }
-			}}
-	return 0; }
-				
+*/				
 
 
 	

@@ -4,7 +4,6 @@
 
 
 int main(int argc, char ** argv) {
-	char  r[] =  {1, 2, 3, 4, 5};
-	printf("%d", sizeof(r));
+	printf("%d", sizeof((char[]) {1, 2, 3, 4, 5, 6, 7}));
 	return 0; }
 
