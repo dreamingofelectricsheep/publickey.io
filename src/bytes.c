@@ -9,10 +9,11 @@
 #include <stdarg.h>
 #include <fcntl.h>
 
-#define debug(d...) printf("[f: %s l: %d] ", __FILE__, __LINE__); \
-	printf(d); printf("\n"); 
+int logging = 1;
+#define debug(d...) if(logging) { printf("[f: %s l: %d] ", __FILE__, __LINE__); \
+	printf(d); printf("\n"); } 
 
-#define B(...) (bytes) { (char[]) { __VA_ARGS__ }, sizeof((char[]) { (__VA_ARGS__) } }
+#define B(...) (bytes) { (char[]) { __VA_ARGS__ }, sizeof((char[]) { (__VA_ARGS__) }) }
 #define Bs(s) (bytes) { s, sizeof(s) - 1 }
 
 typedef struct {

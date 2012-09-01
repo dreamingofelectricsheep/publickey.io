@@ -14,7 +14,7 @@ typedef struct {
 
 
 int http_request_parse(bytes raw, http_request * request) {
-	bytes crlf = B('\r', '\n');
+	bytes crlf = Bs("\r\n");
 	bytes space = B(' ');
 	bfound f = bfind(raw, crlf);
 
