@@ -1,2 +1,2 @@
 echo $'\033'[34mBuilding...$'\033'[m
-gcc -std=c1x ./src/$1.c -o ./bin/$1 -D_POSIX_C_SOURCE=200112L $2
+gcc -std=c11 ./src/$1.c -o ./bin/$1 -D_POSIX_C_SOURCE=200112L $2

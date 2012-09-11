@@ -11,14 +11,14 @@
 
 int logging = 1;
 #define debug(d...) if(logging) { printf("[f: %s l: %d] ", __FILE__, __LINE__); \
-	printf(d); printf("\n"); } 
+	printf(d); printf("\n"); fsync(1); } 
 
 #define B(...) (bytes) { (char[]) { __VA_ARGS__ }, sizeof((char[]) { (__VA_ARGS__) }) }
 #define Bs(s) (bytes) { s, sizeof(s) - 1 }
 
 typedef struct {
 	union {
-		char * as_char;
+		unsigned char * as_char;
 		void * as_void;
 		uint8_t * as_uint8; };
 	size_t length; } bytes;

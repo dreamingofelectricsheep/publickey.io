@@ -6,15 +6,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include "bytes.c"
 
-#define debug(d...) { printf("[f: %s l: %d] ", __FILE__, __LINE__); \
-	printf(d); printf("\n"); }
 #define psize (sizeof(void *))	
 #define bintree(var) cache ## var
 
 typedef struct { uint8_t data[33]; } bintree(key_t);
 
-struct cache_thing {
+struct cache_item {
 	uint16_t size;
 	bintree(key_t) key;
 	uint8_t hash[32]; };
@@ -31,7 +30,7 @@ int bintree(cmp_fun)(bintree(key_t) first, bintree(key_t) second) {
 size_t nearest2(size_t n) {
 	return 1 << ceil(log(n)/log(2)); }
 
-void cachepushthing(struct cachenode ** n, cachekey_t key, struct cache_thing * thing) {
+void cachepushthing(struct cachenode ** n, cachekey_t key, struct cache_item * thing) {
 	struct cachenode * f = cachefind(n, key);
 
 	if(f == 0) {
@@ -75,14 +74,5 @@ int main(int argc, char ** argv) {
 		exit(0); }
 
 	struct cachenode * cachetree = 0;
-
-	{
-		off_t offset = 0;
-		while(1) {
-			struct cache_thing * entry = memcache + offset;
-			if(entry->size == 0) break;
-			
-			cachepushting(&cachetree, entry->key, entry); } }
-
 	return 0; }
 
