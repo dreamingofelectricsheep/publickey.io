@@ -9,14 +9,18 @@ struct objdata {
 struct objdata_ex {
 	struct objdata data;
 	void * ex; };
+		
+void prepare_objdata(struct objdata * o, int fd, 
+	objfun in, objfun err, objfun hup, objfun kill) {
+	o->fd = fd;
+	o->in = in;
+	o->err = err;
+	o->hup = hup;
+	o->kill = kill; }
 	
-int prepare_objdata_ex(struct objdata_ex * o, int fd, 
+void prepare_objdata_ex(struct objdata_ex * o, int fd, 
 	objfun in, objfun err, objfun hup, objfun kill, void * d) {
-	o->data.fd = fd;
-	o->data.in = in;
-	o->data.err = err;
-	o->data.hup = hup;
-	o->data.kill = kill;
+	prepare_objdata(&o->data, fd, in, err, hup, kill);
 	o->ex = d; }
 	
 int eventloop(int epollfd) {

@@ -1,0 +1,32 @@
+<html>
+<head>
+<title>Send an email</title>
+<script type="text/javascript">
+window.onload = function() {
+var button = document.getElementById('button')
+var text = document.getElementById('text')
+
+button.onmouseup = function() {
+	button.onmouseup = undefined
+	button.innerText = "Sending..."
+	var req = new XMLHttpRequest()
+	req.onreadystatechange = function() {
+		if(this.readyState != 4) return;
+		button.innerText = "Mail sent ♥" }
+	req.open('POST', 'send', true);
+	req.send(text.value); }
+
+}
+
+</script>
+</head>
+<body style="text-align:center;color:gray;margin-left:20%;margin-right:20%;
+	margin-top:64px;background:ghostwhite;">
+<textarea style="width:100%;height:60%;font:15px serif;color:inherit;
+	padding:1em;border-color:silver;" id="text">Your Text</textarea>
+<div style="display:inline-block;margin-top:2em;background:silver;
+	height:2em;line-height:2em;text-align:center;
+	border-radius:4px;color:white;cursor:hand;padding-left:1em;
+	padding-right:1em;" id="button">Send</div>
+</body>
+</html>

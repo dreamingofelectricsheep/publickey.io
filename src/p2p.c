@@ -5,6 +5,7 @@
 #include <time.h>
 #include <arpa/inet.h>
 
+#include "bytes.c"
 #include "event.c"
 
 #define bintree(var) peertree ## var
@@ -21,11 +22,13 @@ int bintree(cmp_fun)(bintree(key_t) first, bintree(key_t) second) {
 #undef bintree
  
 
+void p2pprint(struct peertreenode * n, void * data) {
+	char a[256];
+	inet_ntop(AF_INET6, &n->key.addr.s6_addr,
+		a, 256);
+	printf("%s %d, seen: %ld\n", a, ntohs(n->key.port),
+		n->payload); }
 
-void pingpeer(struct sockaddr_in6 * addr, int fd) {
-	char data[256];
-	if(sendto(fd, data, 256, 0, (void*)addr, sizeof(*addr)) == -1) {
-		debug("Something went wrong : ("); } }
 
 
 int prepare_socket(int fd, uint16_t port) {	
@@ -40,29 +43,39 @@ int prepare_socket(int fd, uint16_t port) {
 
 
 
+typedef int (*p2pexternal_fn)(struct sockaddr_in6 addr, bytes data, void * ad);
 struct p2p_st {
-	int pingfd;
+	int socket;
 	struct peertreenode * peer;
+	p2pexternal_fn in;
+	void * additional;
 	struct objdata_ex ping, huptimer, pingtimer; };
 
 
-int ping_in_fn(int epoll, struct objdata * data) {
+
+int p2pin_fn(int epoll, struct objdata * data) {
 	debug("Incoming packet.");
+	struct p2p_st * p2p = *((struct p2p_st**)(data+1));
+	
 	struct sockaddr_in6 src_addr;
 	socklen_t addrlen = sizeof(src_addr);
 
 	size_t len = 4096;
-	uint8_t buf[len];
+	char buf[len];
 
-	struct p2p_st ** p2p = (void*)(data+1);
 	
 	ssize_t r = recvfrom(data->fd, buf, len, 0, (void *)&src_addr, &addrlen);
-	peertreekey_t key = { src_addr.sin6_port, src_addr.sin6_addr };
-	
-	time_t t = time(0);
-	peertreepush(&(*p2p)->peer, key, t);
 
-	return 0; }
+	if(r > 0) {
+		if(buf[0] == 0) {
+			peertreekey_t key = { src_addr.sin6_port, src_addr.sin6_addr };
+			
+			time_t t = time(0);
+			peertreepush(&p2p->peer, key, t); }
+		else { 
+			p2p->in(src_addr, (bytes) { buf, r}, p2p->additional); }
+		return 0; }
+	else return -1; }
 
 
 
@@ -74,33 +87,54 @@ int huptimer_fn(int epoll, struct objdata * data) {
 	read(data->fd, o, 256);
 	return 0; }
 
+
+struct p2psend_st {
+	int fd;
+	bytes data; };
+
+void p2psendpeer(struct peertreenode * n, void * data) {
+	struct p2psend_st * st = data;
+	struct sockaddr_in6 addr = { AF_INET6, n->key.port, 0,
+		n->key.addr, 0 };
+	sendto(st->fd, st->data.as_void, st->data.length, 0, 
+		(void*)&addr, sizeof(addr)); }
+
+void p2psend(struct p2p_st * p2p, bytes data) {
+	struct p2psend_st st = { p2p->socket, data };
+	peertreepreorder(&p2p->peer, &p2psendpeer, &st); }
+
+void p2ppingpeer(struct sockaddr_in6 * addr, int fd) {
+	bytes pingjunk = Bs("\0ping");
+	sendto(fd, pingjunk.as_void, pingjunk.length, 0, 
+		(void*)addr, sizeof(*addr)); }
+
+
 int pingtimer_fn(int epoll, struct objdata * data) {
 	debug("Ping timer event.");
 	struct p2p_st ** p2p = (void*)(data+1);
 	uint64_t junk;
 	read(data->fd, &junk, sizeof(junk));	
-	void fun(struct peertreenode * n, void * data) {
-		int * pingfd = data;
-		struct sockaddr_in6 addr = { AF_INET6, n->key.port, 0,
-			n->key.addr, 0 };
-		uint8_t buffer[256];
-		sendto(*pingfd, buffer, 256, 0, (void*)&addr, sizeof(addr)); }
-
-	peertreepreorder(&(*p2p)->peer, &fun, &(*p2p)->pingfd);
+	
+	bytes pingjunk = Bs("\0ping");
+	p2psend(*p2p, pingjunk);
 	return 0; }	
 
 
 	
-int prepare_p2p(int epollfd, uint16_t port, struct p2p_st * p2p) {
+int p2pprepare(int epollfd, uint16_t port, p2pexternal_fn in, void * a, 
+	struct p2p_st * p2p) {
+	
+	p2p->additional = a;
 	p2p->peer = 0;
-	p2p->pingfd = socket(AF_INET6, SOCK_DGRAM, 0);
+	p2p->socket = socket(AF_INET6, SOCK_DGRAM, 0);
+	p2p->in = in;
 
-	prepare_socket(p2p->pingfd, port);
+	prepare_socket(p2p->socket, port);
 
-	prepare_objdata_ex(&p2p->ping, p2p->pingfd, 
-		&ping_in_fn, &err, &hup, &kill, p2p);
+	prepare_objdata_ex(&p2p->ping, p2p->socket, 
+		&p2pin_fn, &err, &hup, &kill, p2p);
 
-	epoll_add(epollfd, p2p->pingfd, &p2p->ping);
+	epoll_add(epollfd, p2p->socket, &p2p->ping);
 
 
 	int huptimerfd = timerfd_create(CLOCK_MONOTONIC, 0);
@@ -123,3 +157,23 @@ int prepare_p2p(int epollfd, uint16_t port, struct p2p_st * p2p) {
 
 
 	return 0; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
