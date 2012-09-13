@@ -18,13 +18,8 @@ int indata(struct sockaddr_in6 addr, bytes data, void * additional) {
 
 	bprint(data);	
 
-	p2psend(p2p, data);
+	p2psend(p2p, data, p2pendpoint);
 	return 0; }
-
-struct termdata { 
-	int pingfd; 
-	struct peertreenode ** node; };
-
 
 
 int interm(int epoll, struct objdata * obj) { 
@@ -33,15 +28,15 @@ int interm(int epoll, struct objdata * obj) {
 	debug("Received data from terminal!");
 	ssize_t r = read(0, buf, len);
 
-	struct termdata * td = (void*) (obj + 1);
-	struct peertreenode ** n = td->node;
+	
+	struct p2p_st * p2p = *((struct p2p_st**)(obj+1));
 
 	bytes re = { buf, r };
 
 	bfound f = bfind(re, Bs("list"));
 	if(f.found.length > 0) {
 		debug("List command recevied");
-		peertreepreorder(n, &p2pprint, 0); }
+		peertreepreorder(&p2p->peer, &p2pprint, 0); }
 
 	f = bfind(re, Bs("ping "));
 	if(f.found.length > 0) {
@@ -56,7 +51,7 @@ int interm(int epoll, struct objdata * obj) {
 		f.found.as_char[0] = 0;
 		addr.sin6_port = htons(atoi(f.before.as_char));
 		addr.sin6_family = AF_INET6;
-		p2ppingpeer(&addr, td->pingfd);
+		p2ppingpeer(p2p, &addr);
 		
 	}
 	f = bfind(re, Bs("logging"));
@@ -74,20 +69,16 @@ int main(int argc, char ** argv) {
 
 
 	struct p2p_st p2p;
-	p2pprepare(epoll, port, &indata, &p2p, &p2p);
+	p2pprepare(epoll, port, p2prouter, &indata, &p2p, &p2p);
 
 	// Interactive mode support.
 	if(argc == 2 && strcmp(argv[0], "-i")) {
 		printf("Interactive mode. Commands: list, add, remove, ping.\n");
 
 
-		struct objdata * data = malloc(sizeof(struct objdata)
-			+ sizeof(struct termdata));
+		struct objdata_ex * data = malloc(sizeof(*data));
 
-		*data = (struct objdata) { 0, &interm, &err, &hup, &kill };
-		struct termdata * td = (void*) (data + 1);
-		*td = (struct termdata) { p2p.socket, &p2p.peer };
-
+		prepare_objdata_ex(data, 0, &interm, &err, &hup, &kill, &p2p);
 
 		epoll_add(epoll, 0, data);
 

@@ -1,4 +1,6 @@
 #include <sys/epoll.h>
+#include <stdbool.h> 
+#include <errno.h>
 
 struct objdata;
 typedef int (*objfun)(int epoll, struct objdata * blob);

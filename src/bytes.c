@@ -14,7 +14,7 @@ int logging = 1;
 	printf(d); printf("\n"); fsync(1); } } 
 
 #define B(...) (bytes) { (char[]) \
-	{ __VA_ARGS__ }, sizeof((char[]) { (__VA_ARGS__) }) }
+	{ __VA_ARGS__ }, sizeof((char[]) { __VA_ARGS__ }) }
 #define Bs(s) (bytes) { (void*)s, sizeof(s) - 1 }
 
 typedef struct {

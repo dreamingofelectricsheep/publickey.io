@@ -62,7 +62,7 @@ int clientin(int epoll, struct objdata * data) {
 		bfree(page); }
 	else if(buffer[0] == 'P') {
 		bfound f = bfind(rec, Bs("\r\n\r\n"));
-		p2psend(h->p2p, f.after);
+		p2psend(h->p2p, f.after, p2prouter);
 		char * res = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n";
 		send(data->fd, res, strlen(res), 0); }
 
@@ -95,7 +95,7 @@ int main(int argc, char ** argv) {
 	prepare_socket(listener, 80);
 
 	struct p2p_st p2p;
-	p2pprepare(epoll, 8082, &sendin, 0, &p2p);	
+	p2pprepare(epoll, 8082, 0, &sendin, 0, &p2p);	
 
 		
 
