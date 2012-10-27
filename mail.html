@@ -1,9 +1,8 @@
 <html>
 <head>
 <title>Mail</title>
-</head>
-<body></body>
 <script>
+window.onload = function() {
 
 var html = {};
 
@@ -23,14 +22,187 @@ html.create_element = function(tagname, rest) {
 				a = document.createTextNode(a);
 			t.appendChild(a); } }
 	return t };
-var html.tags = ['body', 'head', 'div', 'i', 'b'];
-html.div = function() { return html.create_element('div', arguments); }
+html.tags = ['p', 'body', 'head', 'div', 'i', 'b', 'span'];
+
+
+for(var i = 0; i < html.tags.length; ++i) {
+	(function(t) {
+		html[t] = function() { return html.create_element(t, arguments) } 
+	})(html.tags[i])
+
+}
 
 var body = document.getElementsByTagName('body')[0];
 
-var t;
+
+var sendbutton = html.div({ class: 'send button'}, 'Send')
+var list = html.div({ class: 'list' })
+var searchbar = html.div({ class: 'searchbar', contenteditable: true }, 'Search...')
+var searchbutton = html.div({ class: 'search button' }, 'Search')
+
+body.appendChild(sendbutton)
+body.appendChild(searchbar)
+body.appendChild(searchbutton)
+body.appendChild(list)
+
+var text = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque at nisi quis nunc dignissim dictum. Cras bibendum nisl id libero ultrices in egestas felis pharetra. Pellentesque facilisis nulla dictum mi convallis vel volutpat tortor hendrerit.'
+
+var now = new Date().getTime()
+
+var localstore = {
+	'0': {
+		o: ['11', '12', '13'],
+		'11': {
+			d: now - 100000,
+			c: 'Hello, how are you?',
+			o: 'dave' }, 
+		'12': {
+			d: now - 1000,
+			c: 'I am fine. Thank you.',
+			o: 'you' },
+		'13': {
+			d: now - 1,
+			c: 'Oh. Pity.',
+			o: 'dave' } 
+	}
+}
+
+function raw_entry(origin, date, body) {
+	return html.p({ class: 'email-short' }, 
+		html.p({ class: 'email-short-footer' },
+			html.span({ class: 'email-short-footer-from' }, origin),
+			html.span({ class: 'email-short-footer-when' }, date)),
+			body)
+}
 
 
+for(var i = 0; i < 64; ++i) {
+	
+	var entry = raw_entry('dave', '15 days', text) 
 
+	entry.mailid = '0'
+	entry.mailsubid = '13'
+	entry.onmouseup = function(e) {
+		while(list.firstChild != undefined) {
+			list.removeChild(list.firstChild)
+		}
+
+
+		var conv = localstore[e.target.mailid]
+		for(var i = 0; i < conv.o.length; ++i) {
+			var en = conv[conv.o[i]]
+			list.appendChild(raw_entry(en.o, 
+				new Date(en.d).toDateString(), en.c))
+		}
+
+		list.classList.remove('list')
+		list.classList.add('conv-list')
+
+	}
+
+	list.appendChild(entry)
+}
+
+}
 </script>
+<style type="text/css">
+
+.searchbar {
+	font: 1em sans-serif;
+	text-align: left;
+	background: white;
+	width: 20%;
+}
+
+.email-short-footer {
+	margin: 5px;
+	margin-top: 0;
+	padding-left: 1em;
+	font-size: 0.8em;
+}
+
+
+.email-short-footer-from{
+	font-weight: bold;
+}
+
+.email-short-footer-from:before {
+	font-weight: normal;
+	content: 'from ';
+}
+
+.email-short-footer-when:before {
+	content: ' ' 
+}
+
+.email-short-footer-when:after {
+	content: ' ago'
+}
+
+.button {
+	display: inline-block;
+	font: 1em sans-serif;
+	background: ghostWhite;
+	color: black;
+	cursor: hand;
+	margin: 2em;
+}
+
+.button, .searchbar {
+	box-shadow: 0 0 89px silver;
+	display: inline-block;
+	padding: 0.4em;
+	padding-left: 1em;
+	padding-right: 1em;
+	border-radius: 4px;
+}
+
+body {
+	margin: 0;
+	text-align: center;
+	background-image: url(xv.png); 
+}
+
+.list, .conv-list {
+	margin: auto;
+	width: 60%;
+	text-align: justify;
+}
+
+
+.list :nth-child(odd) {
+	background: white;
+}
+
+.email-short :nth-child(odd) {
+	background: inherit;
+}
+
+.email-short {
+	cursor: hand;
+	border-radius: 6px;
+	font-size: 0.8em;
+	margin: 0;
+	padding: 2em;
+}
+
+
+.conv-list .email-short {
+	padding-top: 1em;
+	padding-bottom: 1em;
+	background: white;
+	border-radius: 0 
+}
+
+.conv-list :first-child {
+	border-radius: 6px 6px 0 0;
+}
+
+.conv-list :last-child {
+	border-radius: 0 0 6px 6px;
+}
+
+</style>
+</head>
+<body></body>
 </html>

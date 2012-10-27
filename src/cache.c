@@ -5,23 +5,25 @@
 #include <sys/mman.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "bytes.c"
 #include "p2p.c"
 
-#define psize (sizeof(void *))	
+const size_t cache_key_bytes = 33;
+const size_t cache_mem_growth_rate = 16;
+
+#define ptrlen (sizeof(void *))	
 #define bintree(var) cache ## var
 
-typedef struct { uint8_t data[33]; } bintree(key_t);
+typedef struct { uint8_t data[cache_key_bytes]; } bintree(key_t);
 
-struct cache_item {
-	uint32_t size;
-	bintree(key_t) key; };
+struct cache_disk_item {
+	uint32_t len;
+	bintree(key_t) owner; };
 
 typedef struct { 
-	size_t size; 
-	struct cache_item ** array; } bintree(payload_t);
+	size_t len; 
+	struct cache_disk_item ** array; } bintree(payload_t);
 
 int bintree(cmp_fun)(bintree(key_t) first, bintree(key_t) second) {
 	return memcmp(&first, &second, sizeof(first)); }
@@ -30,33 +32,29 @@ int bintree(cmp_fun)(bintree(key_t) first, bintree(key_t) second) {
 
 #undef bintree
 
-
-size_t nearest2(size_t n) {
-	return 1 << (int)ceil(log(n)/log(2)); }
-
 void cachepushthing(struct cachenode ** n, cachekey_t key, 
-	struct cache_item * thing) {
+	struct cache_disk_item * thing) {
 
 	struct cachenode * f = cachefind(n, key);
 
 	if(f == 0) {
 		cachepayload_t payload = 
-			{ 1, malloc(psize * 2) };
+			{ 1, malloc(ptrlen * cache_mem_growth_rate ) };
+		payload.array[0] = thing;
 
 		cachepush(n, key, payload); }
 	else {
-		size_t last = f->payload.size;
-		f->payload.size++;
-		size_t lastalloc = nearest2(last);
-		size_t alloc = nearest2(f->payload.size);
-		if(alloc != lastalloc) {
-			void * new = malloc(psize * alloc);
-			memcpy(new, f->payload.array, 
-				(psize * (f->payload.size - 1)));
+		f->payload.len++;
+		if(f->payload.len % cache_mem_growth_rate == 0) {
+			void * new_array = malloc(
+				ptrlen * (f->payload.len + cache_mem_growth_rate ));
+			memcpy(new_array, f->payload.array, ptrlen * (f->payload.len - 1));
 			free(f->payload.array);
-			f->payload.array = new; }
-
-		f->payload.array[f->payload.size - 1] = thing; } }
+			f->payload.array = new_array;
+		}
+		f->payload.array[f->payload.len - 1] = thing;
+	}
+}
 
 struct indata_st {
 	struct p2p_st * p2p;

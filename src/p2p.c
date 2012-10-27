@@ -130,7 +130,7 @@ int pingtimer_fn(int epoll, struct objdata * data) {
 	uint64_t junk;
 	read(data->fd, &junk, sizeof(junk));	
 	
-	bytes pingjunk = B(0, 0, 0, 0, 0);
+	bytes pingjunk = B(0, 0, 0, 0, 0, 0, 0, 0, 0);
 	*((uint64_t*) (pingjunk.as_char+1)) = p2p->flags; 
 	p2psend(p2p, pingjunk, 0);
 	return 0; }	

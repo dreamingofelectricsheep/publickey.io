@@ -11,8 +11,7 @@
 #include <string.h>
 #include <errno.h>
 
-#define debug(d...) { printf("[f: %s l: %d] ", __FILE__, __LINE__); \
-	printf(d); printf("\n"); }
+#include "bytes.c"
 
 #include <openssl/obj_mac.h>
 #include <openssl/ec.h>

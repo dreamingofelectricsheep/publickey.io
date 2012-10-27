@@ -1,0 +1,145 @@
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mail writer</title>
+<script type="text/javascript">
+window.onload = function() {
+
+var editor = document.getElementById('editor')
+
+
+var bold = document.getElementsByClassName('icon-bold')[0]
+bold.onclick = function() {
+	document.execCommand('bold', false, null)
+}
+var underline = document.getElementsByClassName('icon-underline')[0]
+underline.onclick = function() {
+	document.execCommand('underline', false, null)
+}
+var italic = document.getElementsByClassName('icon-italic')[0]
+italic.onclick = function() {
+	document.execCommand('italic', false, null)
+}
+var strikethrough = document.getElementsByClassName('icon-strikethrough')[0]
+strikethrough.onclick = function() {
+	document.execCommand('strikethrough', false, null)
+}
+
+var ul = document.getElementsByClassName('icon-list-ul')[0]
+ul.onclick = function() {
+	document.execCommand('insertunorderedlist', false, null)
+}
+
+var ol = document.getElementsByClassName('icon-list-ol')[0]
+ol.onclick = function() {
+	document.execCommand('insertorderedlist', false, null)
+}
+
+
+var link = document.getElementsByClassName('icon-link')[0]
+link.onclick = function() {
+	document.execCommand('createlink', false, 'http://www.google.com')
+}
+
+
+}
+</script>
+<style>
+@font-face {
+	font-family: 'FontAwesome';
+	src: url('fontawesome-webfont.ttf') format('truetype');
+}
+
+
+[class^='icon-']:before {
+	font-size: 1.5em;
+	font-family: 'FontAwesome';
+}
+
+.icon-bold:before {
+	content: "\f032";
+}
+.icon-italic:before {
+	content: "\f033";
+}
+.icon-list-ul:before {
+	content: "\f0ca";
+}
+.icon-list-ol:before {
+	content: "\f0cb";
+}
+.icon-strikethrough:before {
+	content: "\f0cc";
+}
+.icon-underline:before {
+	content: "\f0cd";
+}
+.icon-link:before {
+	content: "\f0c1";
+}
+
+html {
+	width: 100%;
+	height: 100%;
+}
+body {
+	margin: 0;
+	background: url('gray_sand.png');
+	width: 100%;
+	height: 100%;
+	text-align: center;
+}
+#editor {
+	font-family: 'Arial';
+	display: inline-block;
+	background: white;
+	margin-top: 5%;
+	padding: 20px;
+	min-height: 70%;
+	width: 60%;
+	text-align: left;
+	border-radius: 10px;
+	box-shadow: 0 0 10px 1px black;
+}
+#editor::selection, #editor *::selection {
+	background: lightBlue;
+}
+
+#editor:focus{
+	outline: none;
+}
+#tools {
+	position: fixed;
+	left: 15%;
+	top: 20%;
+	text-align: center;
+	width: 10px;
+}
+
+#tools * {
+	cursor: pointer;
+	margin: 10px;
+}
+
+button {
+	background: transparent;
+	border: none;
+}
+
+</style>
+</head>
+<body>
+
+<div id="editor" contenteditable="true">Click here to edit</div>
+<div id="tools">
+<button title="Bold" class="icon-bold"></button>
+<button title="Underline" class="icon-underline"></button>
+<button title="Strikethrough" class="icon-strikethrough"></button>
+<button title="Italic" class="icon-italic"></button>
+<button title="Numbered list" class="icon-list-ol"></button>
+<button title="Dotted list" class="icon-list-ul"></button>
+<button title="Link" class="icon-link"></button>
+</div>
+
+</body>
+</html>
