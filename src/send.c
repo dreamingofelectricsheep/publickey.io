@@ -42,24 +42,72 @@ int clientin(int epoll, struct objdata * data) {
 
 	
 	if(buffer[0] == 'G') {
-		int f = open("../src/send.html", 0);
-		bytes page = balloc(1 << 20);
-		page.length = read(f, page.as_void, page.length);
+		if(buffer[5] == ' ') {
+			int f = open("../src/mailbox.html", 0);
+			bytes page = balloc(1 << 20);
+			page.length = read(f, page.as_void, page.length);
 
-		bytes num = balloc(16);
-	 	num = bfromint(num, page.length);
-		bytes h1 = Bs("HTTP/1.1 200 OK\r\n"
-			"Content-Length: ");
-		bytes h2 = Bs("\r\n"
-			"Content-Type: text/html\r\n"
-			"\r\n");
-		send(data->fd, h1.as_void, h1.length, 0);
-		send(data->fd, num.as_void, num.length, 0);
-		send(data->fd, h2.as_void, h2.length, 0);
-		send(data->fd, page.as_void, page.length, 0);
-		
-		close(f);
-		bfree(page); }
+			bytes num = balloc(16);
+			num = bfromint(num, page.length);
+			bytes h1 = Bs("HTTP/1.1 200 OK\r\n"
+				"Content-Length: ");
+			bytes h2 = Bs("\r\n"
+				"Content-Type: text/html;charset=UTF-8\r\n"
+				"\r\n");
+			send(data->fd, h1.as_void, h1.length, 0);
+			send(data->fd, num.as_void, num.length, 0);
+			send(data->fd, h2.as_void, h2.length, 0);
+			send(data->fd, page.as_void, page.length, 0);
+			
+			close(f);
+			bfree(page); 
+		}
+		else if(buffer[5] == 'f') {
+			int f = open("../src/fontawesome-webfont.ttf", 0);
+			bytes page = balloc(1 << 20);
+			page.length = read(f, page.as_void, page.length);
+
+			bytes num = balloc(16);
+			num = bfromint(num, page.length);
+			bytes h1 = Bs("HTTP/1.1 200 OK\r\n"
+				"Content-Length: ");
+			bytes h2 = Bs("\r\n"
+				"Content-Type: text/html;charset=UTF-8\r\n"
+				"\r\n");
+			send(data->fd, h1.as_void, h1.length, 0);
+			send(data->fd, num.as_void, num.length, 0);
+			send(data->fd, h2.as_void, h2.length, 0);
+			send(data->fd, page.as_void, page.length, 0);
+			
+			close(f);
+			bfree(page); 
+		}
+		else if(buffer[5] == 'g') {
+			int f = open("../src/gray_sand.png", 0);
+			bytes page = balloc(1 << 20);
+			page.length = read(f, page.as_void, page.length);
+
+			bytes num = balloc(16);
+			num = bfromint(num, page.length);
+			bytes h1 = Bs("HTTP/1.1 200 OK\r\n"
+				"Content-Length: ");
+			bytes h2 = Bs("\r\n"
+				"Content-Type: text/html;charset=UTF-8\r\n"
+				"\r\n");
+			send(data->fd, h1.as_void, h1.length, 0);
+			send(data->fd, num.as_void, num.length, 0);
+			send(data->fd, h2.as_void, h2.length, 0);
+			send(data->fd, page.as_void, page.length, 0);
+			
+			close(f);
+			bfree(page); 
+		}
+		else {
+			bytes h1 = Bs("HTTP/1.1 404 Not Found\r\n"
+				"Content-Length: 0\r\n\r\n");
+			send(data->fd, h1.as_void, h1.length, 0);
+		}
+	}
 	else if(buffer[0] == 'P') {
 		bfound f = bfind(rec, Bs("\r\n\r\n"));
 		p2psend(h->p2p, f.after, p2prouter);

@@ -1,0 +1,380 @@
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mail writer</title>
+<script type="text/javascript">
+window.onload = function() {
+
+var html = {};
+
+
+html.create_element = function(tagname, rest) {
+	var t = document.createElement(tagname)
+
+	if(rest.length > 0) {
+		var i = 0
+		if(typeof rest[0] == "object" && rest[0].innerHTML == undefined) {
+			i = 1
+			for(var k in rest[0]) {
+				t.setAttribute(k, rest[0][k]) 
+			} 
+		}
+
+		for(; i < rest.length; i++) {
+			var a = rest[i]
+			if(typeof a == 'string') 
+				a = document.createTextNode(a)
+			t.appendChild(a)
+		} 
+	}
+	return t
+}
+
+html.tags = ['button', 'p', 'body', 'head', 'div', 'i', 'b', 'span', 'input'];
+
+
+for(var i = 0; i < html.tags.length; ++i) {
+	(function(t) {
+		html[t] = function() { return html.create_element(t, arguments) } 
+	})(html.tags[i])
+}
+
+var body = document.getElementsByTagName('body')[0]
+
+function create_editor(push) {
+	if(push) window.history.pushState({ state: 'editor' }, 'Conversation', 'conversation')
+	state = 'editor'
+
+	var editor = html.div({ id: 'editor', class: 'mail', contenteditable: 'true' }, 'Click here to edit')
+	var container = html.div({ id: 'editor-container' }, editor)
+	body.appendChild(container)
+
+	var bold = html.button({ title: 'Bold', class: 'icon-bold' })
+	var underline = html.button({ title: 'Underline', class: 'icon-underline' })
+	var strikethrough = html.button({ title: 'Strikethrough', class: 'icon-strikethrough' })
+	var italic = html.button({ title: 'Italic', class: 'icon-italic' })
+	var ol = html.button({ title: 'Numbered list', class: 'icon-list-ol' })
+	var ul = html.button({ title: 'Dotted list', class: 'icon-list-ul' })
+	var link = html.button({ title: 'Link', class: 'icon-link' })
+
+	body.appendChild(html.div({ id: 'tools' },
+		bold, underline, strikethrough, italic, ol, ul, link))
+
+
+	var send = html.button({ id: 'send' }, "Send")
+	body.appendChild(send)
+
+	bold.onclick = function() {
+		document.execCommand('bold', false, null)
+	}
+	underline.onclick = function() {
+		document.execCommand('underline', false, null)
+	}
+	italic.onclick = function() {
+		document.execCommand('italic', false, null)
+	}
+	strikethrough.onclick = function() {
+		document.execCommand('strikethrough', false, null)
+	}
+
+	ul.onclick = function() {
+		document.execCommand('insertunorderedlist', false, null)
+	}
+
+	ol.onclick = function() {
+		document.execCommand('insertorderedlist', false, null)
+	}
+
+	link.onclick = function() {
+		document.execCommand('createlink', false, 'http://www.google.com')
+	}
+
+
+	send.onclick = function() {
+		var msg = editor.innerHTML
+
+		var req = new XMLHttpRequest()
+		req.onreadystatechange = function() {
+			if(this.readyState != 4) return
+			send.innerHTML = "Send" 
+		}
+
+		req.open('POST', 'send', true)
+		req.send(msg)
+
+		send.innerHTML = "Sending..."
+
+		var mail = document.createElement('div')
+		mail.innerHTML = msg
+		mail.className = 'mail'
+		editor.innerHTML = ''
+		container.insertBefore(mail, editor)
+		window.scrollBy(0, 10000)
+	}
+}
+function remove_editor() {
+	var e = ['editor-container', 'tools', 'send']
+	for(var each in e) {
+		body.removeChild(document.getElementById(e[each]))
+	}
+}
+
+var contactsdb = []
+var current = {}
+var state = ''
+
+function remove_newcontact() {
+	body.removeChild(document.getElementById('newcontact-container'))
+}
+
+function create_newcontact(push) {
+	if(push) window.history.pushState({ state: 'newcontact' }, 'Making new contact', 'contactsnew')
+	state = 'newcontact'
+
+	var button = html.button({}, 'Done')
+
+	var icon = html.div({ class: 'icon-user' }, '')
+	var name = html.input({  type: 'text', placeholder: 'Name' })
+	var description = html.input({ type: 'text', placeholder: 'Description' })
+	var address = html.input({ type: 'text', placeholder: 'Email address or public key' })
+
+	var container = html.div({ id: 'newcontact-container' },
+		icon, name, description, address, button)
+
+	button.onclick = function() {
+		var con = {
+			name: name.value,
+			description: description.value,
+			address: address.value
+		}
+		contactsdb.push(con)
+		
+
+		remove_newcontact()
+		create_contacts(true)
+		window.scrollBy(0, 10000)
+	}
+
+	body.appendChild(container)
+}
+
+function remove_contacts() {
+	body.removeChild(document.getElementById('contacts-container'))
+}
+
+function create_contacts(push) {
+	if(push) {
+		if(state == '') {
+			window.history.replaceState({ state: 'contacts' }, 'Contacts', 'contacts')
+		} else {
+			window.history.pushState({ state: 'contacts' }, 'Contacts', 'contacts')
+		}
+	}
+	state = 'contacts'
+
+	var plus = html.div({ class: 'contact-thumb', id: 'contact-plus' }, '+')
+	var container = html.div({ id: 'contacts-container' }, plus)
+
+	for(var i in contactsdb) {
+		var c = contactsdb[i]
+		var ch = html.div({ class: 'contact-thumb' }, c.name)
+		ch.MAILBOXcontact = c
+		ch.onclick = function() {
+			remove_contacts()
+			create_editor(true)
+		}
+		container.insertBefore(ch, plus)
+	}
+		
+
+	plus.onclick = function() {
+		remove_contacts()		
+		create_newcontact(true)
+	}
+		
+
+	body.appendChild(container)
+}
+
+window.onpopstate = function(event) {
+	if(event.state == undefined) return
+
+	switch(state) {
+		case 'editor': remove_editor(); break
+		case 'contacts': remove_contacts(); break
+		case 'newcontact': remove_newcontact(); break
+	}
+
+	switch(event.state.state) {
+		case 'editor': create_editor(false); break
+		case 'contacts': create_contacts(false); break
+		case 'newcontact': create_newcontact(false); break
+	}
+}
+
+create_contacts(true)
+
+
+
+	
+}
+</script>
+<style>
+@font-face {
+	font-family: 'FontAwesome';
+	src: url('fontawesome-webfont.ttf') format('truetype');
+}
+
+.contact-thumb {
+	overflow: hidden;
+	display: inline-block;
+	vertical-align: top;
+	width: 200px;
+	height: 160px;
+	line-height: 160px;
+	border-radius: 8px;
+	background: gray;
+	color: black;
+	text-align: center;
+	cursor: pointer;
+	margin: 5px;
+}
+#contact-plus {
+	font-size: 10em;
+}
+
+#newcontact-container input {
+	display: block;
+	margin: auto;
+	margin-bottom: 10px;
+	font-size: 20px;
+	border: none;
+	border-radius: 8px;
+	padding: 5px;
+}
+
+.icon-bold:before {
+	content: "\f032";
+	font-family: 'FontAwesome';
+}
+.icon-italic:before {
+	content: "\f033";
+	font-family: 'FontAwesome';
+}
+.icon-list-ul:before {
+	content: "\f0ca";
+	font-family: 'FontAwesome';
+}
+.icon-list-ol:before {
+	content: "\f0cb";
+	font-family: 'FontAwesome';
+}
+.icon-strikethrough:before {
+	content: "\f0cc";
+	font-family: 'FontAwesome';
+}
+.icon-underline:before {
+	content: "\f0cd";
+	font-family: 'FontAwesome';
+}
+.icon-link:before {
+	content: "\f0c1";
+	font-family: 'FontAwesome';
+}
+
+html {
+	width: 100%;
+	height: 100%;
+}
+body {
+	margin: 0;
+	background: url('gray_sand.png');
+	width: 100%;
+	text-align: center;
+	padding-bottom: 50px;
+}
+#editor-container, #contacts-container, #newcontact-container {
+	font-family: 'Arial';
+	display: inline-block;
+	margin-top: 5%;
+	width: 60%;
+	text-align: left;
+}
+#editor-container {
+	background: white;
+	border-radius: 10px;
+	box-shadow: 0 0 10px 1px black;
+}
+#editor-container .mail {
+	word-wrap: break-word;
+	padding: 20px;
+	border-bottom: 1px solid silver;
+}
+#editor-container .mail:last-child {
+	border: none;
+}
+#editor {
+	min-height: 50%;
+}
+
+#editor::selection, #editor *::selection {
+	background: lightBlue;
+}
+
+#editor:focus{
+	outline: none;
+}
+#tools {
+	position: fixed;
+	left: 15%;
+	top: 20%;
+	text-align: center;
+	width: 10px;
+}
+
+#tools * {
+	cursor: pointer;
+	margin: 10px;
+	background: transparent;
+	border: none;
+}
+
+#send, #newcontact-container button {
+	border: none;
+	display: block;
+	margin: auto;
+	background:silver;
+	height:2em;
+	line-height:2em;
+	text-align:center;
+	border-radius:4px;
+	cursor:hand;
+	padding-left:1em;
+	padding-right:1em;
+	margin-top: 30px;
+}
+
+
+[class^='icon-']:before {
+	color: black;
+	font-size: 1.5em;
+	font-family: 'FontAwesome';
+}
+
+.icon-user {
+	display: inline-block;
+	font-family: 'FontAwesome';
+	font-size: 100px;
+}
+#newcontact-container {
+	text-align:center;
+}
+
+
+
+</style>
+</head>
+<body>
+
+</body>
+</html>

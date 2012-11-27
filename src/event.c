@@ -59,6 +59,14 @@ int epoll_add(int epoll, int fd, void * data) {
 			return -1; }
 		else return 0; }
 
+int in(int epoll, struct objdata * data) {
+	debug("Some data received.");
+	char buffer[4096];
+	ssize_t r = read(data->fd, buffer, 4096);
+	write(0, buffer, r);
+	return 0; }
+
+
 int kill(int epoll, struct objdata * data) {
 	// Don't worry, epoll concatenates events on the same destriptor.
 	debug("Terminating!");
