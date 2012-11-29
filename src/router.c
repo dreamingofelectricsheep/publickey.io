@@ -18,6 +18,7 @@ int indata(struct sockaddr_in6 addr, bytes data, void * additional) {
 
 	bprint(data);	
 
+	debug("End of email.")
 	p2psend(p2p, data, p2pendpoint);
 	return 0; }
 

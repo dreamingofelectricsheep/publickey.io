@@ -1,6 +1,5 @@
 <html>
 <head>
-<meta charset="utf-8">
 <title>Mail writer</title>
 <script type="text/javascript">
 window.onload = function() {
@@ -119,7 +118,6 @@ function remove_editor() {
 	}
 }
 
-var contactsdb = []
 var current = {}
 var state = ''
 
@@ -147,7 +145,10 @@ function create_newcontact(push) {
 			description: description.value,
 			address: address.value
 		}
-		contactsdb.push(con)
+		var list = JSON.parse(localStorage['contacts'])
+		list.push(con.address)
+		localStorage['contacts'] = JSON.stringify(list)
+		localStorage[con.address] = JSON.stringify(con)
 		
 
 		remove_newcontact()
@@ -175,8 +176,10 @@ function create_contacts(push) {
 	var plus = html.div({ class: 'contact-thumb', id: 'contact-plus' }, '+')
 	var container = html.div({ id: 'contacts-container' }, plus)
 
-	for(var i in contactsdb) {
-		var c = contactsdb[i]
+	var list = JSON.parse(localStorage.contacts)
+
+	for(var i in list) {
+		var c = JSON.parse(localStorage[list[i]])
 		var ch = html.div({ class: 'contact-thumb' }, c.name)
 		ch.MAILBOXcontact = c
 		ch.onclick = function() {
@@ -210,6 +213,10 @@ window.onpopstate = function(event) {
 		case 'contacts': create_contacts(false); break
 		case 'newcontact': create_newcontact(false); break
 	}
+}
+
+if(localStorage['contacts'] == undefined) {
+	localStorage['contacts'] = JSON.stringify([])
 }
 
 create_contacts(true)
