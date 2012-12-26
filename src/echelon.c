@@ -1,8 +1,6 @@
 #include "bytes.c"
 #include <fcntl.h>
 
-#include "flex.c"
-#include "echelon-protocol.c"
 
 struct bignum_st * readkeyfile(char * f) {
 	uint8_t key[32];

@@ -22,6 +22,12 @@ struct html_st {
 	struct objdata data;
 	struct p2p_st * p2p; };
 
+struct http_mail_header {
+	uint16_t version;
+	uint8_t destination[33];
+	uint8_t encryption_key[32];
+};
+
 // Clients have their own "in" callback.
 int clientin(int epoll, struct objdata * data) {
 	char buffer[4096];
@@ -110,6 +116,15 @@ int clientin(int epoll, struct objdata * data) {
 	}
 	else if(buffer[0] == 'P') {
 		bfound f = bfind(rec, Bs("\r\n\r\n"));
+		if(f.after.length < 66) {
+			debug("ERROR!!!!!!!!!!!!!!!!!!!")
+		}
+
+		struct http_mail_header * header = f.after.void_ptr;
+		if(header->version != 0) debug("WRONG VERSION!!!");
+
+		
+
 		p2psend(h->p2p, f.after, p2prouter);
 		char * res = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n";
 		send(data->fd, res, strlen(res), 0); }

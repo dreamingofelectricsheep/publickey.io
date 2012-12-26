@@ -62,15 +62,67 @@ int interm(int epoll, struct objdata * obj) {
 	
 	return 0; }
 
+struct frame
+{
+	ssize_t recvd;
+	union 
+	{
+		uint32_t len;
+		uint8_t frame[4092];
+	};
+};
+
+
+
+int inmail(int epoll, struct objdata * obj) { 
+	int * slots;
+	struct frame * frame_freelist;
+
+	uint32_t framelen;
+	ssize_t r = recv(obj->fd, &framelen, sizeof(framelen), MSG_PEEK);
+
+	if(r < 0)
+	{
+		debug("An error has occured.");
+	}
+	else if(r == 0)
+	{
+		debug("Connection closed by peer.");
+		close(obj->fd);
+	}
+	else
+	{
+		if(r < sizeof(framelen))
+		{
+			return 0;
+		}
+		
+		struct frame * buffer;
+		buffer->recvd = recv(obj->fd, buffer->frame, 4092, 0);
+
+		if(buffer->recvd == buffer->len) 
+		{
+			// Interpret the frame.
+		}
+	}
+}	
+
 
 int main(int argc, char ** argv) {
 
 	int epoll = epoll_create(1);
-	uint16_t port = 8080;
+	uint16_t cacheport = 8080;
+	int slot_exp = 10;
+	int slot_len = 1024;
 
+	int slots = malloc(sizeof(int) * (1 << slot_exp) * slot_len);
 
-	struct p2p_st p2p;
-	p2pprepare(epoll, port, p2prouter, &indata, &p2p, &p2p);
+	int cachesock = socket(AF_INET6, SOCK_STREAM, 0);
+	prepare_socket(cachesock, cacheport);
+	
+	struct objdata_ex * data = malloc(sizeof(*data));
+	prepare_objdata_ex(data, 0, &interm, &err, &hup, &kill, &p2p);
+	epoll_add(epoll, cachesock, data);
 
 	// Interactive mode support.
 	if(argc == 2 && strcmp(argv[0], "-i")) {
@@ -82,9 +134,6 @@ int main(int argc, char ** argv) {
 		prepare_objdata_ex(data, 0, &interm, &err, &hup, &kill, &p2p);
 
 		epoll_add(epoll, 0, data);
-
-
-
 	}
 
 	eventloop(epoll);
