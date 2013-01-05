@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>Mail writer</title>
+<title>Mailbox</title>
 <script type="text/javascript">
 window.onload = function() {
 
@@ -29,7 +29,7 @@ html.create_element = function(tagname, rest) {
 	return t
 }
 
-html.tags = ['a', 'button', 'p', 'body', 'head', 'div', 'i', 'b', 'span', 'input'];
+html.tags = ['a', 'button', 'p',  'head', 'div', 'i', 'b', 'span', 'input'];
 
 
 for(var i = 0; i < html.tags.length; ++i) {
@@ -40,353 +40,143 @@ for(var i = 0; i < html.tags.length; ++i) {
 
 var body = document.getElementsByTagName('body')[0]
 
-function create_editor(push) {
-	if(push) window.history.pushState({ state: 'editor' }, 'Conversation', 'conversation')
-	state = 'editor'
-
-	var editor = html.div({ id: 'editor', class: 'mail', contenteditable: 'true' }, 'Click here to edit')
-	var container = html.div({ id: 'editor-container' }, editor)
-	body.appendChild(container)
-
-	var bold = html.button({ title: 'Bold', class: 'icon-bold' })
-	var underline = html.button({ title: 'Underline', class: 'icon-underline' })
-	var strikethrough = html.button({ title: 'Strikethrough', class: 'icon-strikethrough' })
-	var italic = html.button({ title: 'Italic', class: 'icon-italic' })
-	var ol = html.button({ title: 'Numbered list', class: 'icon-list-ol' })
-	var ul = html.button({ title: 'Dotted list', class: 'icon-list-ul' })
-	var link = html.button({ title: 'Link', class: 'icon-link' })
-
-	body.appendChild(html.div({ id: 'tools' },
-		bold, underline, strikethrough, italic, ol, ul, link))
-
-
-	var send = html.button({ id: 'send' }, "Send")
-	body.appendChild(send)
-
-	bold.onclick = function() {
-		document.execCommand('bold', false, null)
-	}
-	underline.onclick = function() {
-		document.execCommand('underline', false, null)
-	}
-	italic.onclick = function() {
-		document.execCommand('italic', false, null)
-	}
-	strikethrough.onclick = function() {
-		document.execCommand('strikethrough', false, null)
-	}
-
-	ul.onclick = function() {
-		document.execCommand('insertunorderedlist', false, null)
-	}
-
-	ol.onclick = function() {
-		document.execCommand('insertorderedlist', false, null)
-	}
-
-	link.onclick = function() {
-		document.execCommand('createlink', false, 'http://www.google.com')
-	}
-
-
-	send.onclick = function() {
-		var msg = editor.innerHTML
-
-		var req = new XMLHttpRequest()
-		req.onreadystatechange = function() {
-			if(this.readyState != 4) return
-			send.innerHTML = "Send" 
-		}
-
-		req.open('POST', 'send', true)
-		req.send(msg)
-
-		send.innerHTML = "Sending..."
-
-		var mail = document.createElement('div')
-		mail.innerHTML = msg
-		mail.className = 'mail'
-		editor.innerHTML = ''
-		container.insertBefore(mail, editor)
-		window.scrollBy(0, 10000)
-	}
-}
-function remove_editor() {
-	var e = ['editor-container', 'tools', 'send']
-	for(var each in e) {
-		body.removeChild(document.getElementById(e[each]))
-	}
+var contacts = JSON.parse(localStorage['contacts'])
+if(typeof contacts != 'object') {
+	contacts = []
 }
 
-var current = {}
-var state = ''
+with(html) {
+	var contactview = div({ class: 'contactview' })
 
-function remove_newcontact() {
-	body.removeChild(document.getElementById('newcontact-container'))
-}
-
-function create_newcontact(push) {
-	if(push) window.history.pushState({ state: 'newcontact' }, 'Making new contact', 'contactsnew')
-	state = 'newcontact'
-
-	var button = html.button({}, 'Done')
-
-	var icon = html.div({ class: 'icon-user' }, '')
-	var name = html.input({  type: 'text', placeholder: 'Name' })
-	var description = html.input({ type: 'text', placeholder: 'Description' })
-	var address = html.input({ type: 'text', placeholder: 'Email address or public key' })
-
-	var container = html.div({ id: 'newcontact-container' },
-		icon, name, description, address, button)
-
-	button.onclick = function() {
-		var con = {
-			name: name.value,
-			description: description.value,
-			address: address.value
-		}
-		var list = JSON.parse(localStorage['contacts'])
-		list.push(con.address)
-		localStorage['contacts'] = JSON.stringify(list)
-		localStorage[con.address] = JSON.stringify(con)
-		
-
-		remove_newcontact()
-		create_contacts(true)
-		window.scrollBy(0, 10000)
+	for(var c in contacts) {
+		contactview.appendChild(a({ class: 'contact', 
+			href: 'talk/'+contacts[c].addr }, 
+			contacts[c].name, span({ class: 'addr' }, contacts[c].addr)))
 	}
 
-	body.appendChild(container)
 }
 
-function remove_contacts() {
-	body.removeChild(document.getElementById('contacts-container'))
-}
+body.appendChild(contactview)
+body.appendChild(html.div({ class: 'contactbuttonsview' },
+	html.a({ href:'#', class: 'button' }, 'Add contact')))
 
-function create_contacts(push) {
-	if(push) {
-		if(state == '') {
-			window.history.replaceState({ state: 'contacts' }, 'Contacts', 'contacts')
-		} else {
-			window.history.pushState({ state: 'contacts' }, 'Contacts', 'contacts')
-		}
-	}
-	state = 'contacts'
+body.appendChild(html.div({ class: 'selfview' }))	
 
-	var plus = html.div({ class: 'contact-thumb', id: 'contact-plus' }, '+')
-	var container = html.div({ id: 'contacts-container' }, plus)
-
-	var list = JSON.parse(localStorage.contacts)
-
-	for(var i in list) {
-		var c = JSON.parse(localStorage[list[i]])
-		var ch = html.div({ class: 'contact-thumb' }, c.name)
-		ch.MAILBOXcontact = c
-		ch.onclick = function() {
-			remove_contacts()
-			create_editor(true)
-		}
-		container.insertBefore(ch, plus)
-	}
-		
-
-	plus.onclick = function() {
-		remove_contacts()		
-		create_newcontact(true)
-	}
-		
-
-	body.appendChild(container)
-}
-
-window.onpopstate = function(event) {
-	if(event.state == undefined) return
-
-	switch(state) {
-		case 'editor': remove_editor(); break
-		case 'contacts': remove_contacts(); break
-		case 'newcontact': remove_newcontact(); break
-	}
-
-	switch(event.state.state) {
-		case 'editor': create_editor(false); break
-		case 'contacts': create_contacts(false); break
-		case 'newcontact': create_newcontact(false); break
-	}
-}
-
-if(localStorage['contacts'] == undefined) {
-	localStorage['contacts'] = JSON.stringify([])
-}
-
-create_contacts(true)
+body.removeChild(document.getElementById('spinner'))
 
 
-var l = html.a({ href: '/hello' }, 'LINK')
-l.onclick = function(e) {
-	e.preventDefault()
-}
-body.appendChild(l)
-
-	
 }
 </script>
 <style>
-@font-face {
-	font-family: 'FontAwesome';
-	src: url('fontawesome-webfont.ttf') format('truetype');
-}
-
-.contact-thumb {
-	overflow: hidden;
-	display: inline-block;
-	vertical-align: top;
-	width: 200px;
-	height: 160px;
-	line-height: 160px;
-	border-radius: 8px;
-	background: gray;
+.button {
+	padding: 4px 12px;
+	background-image: -webkit-linear-gradient(top, white, #E6E6E6);
+	border-radius: 4px;
+	font-family: sans-serif;
+	font-size: 14px;
+	border: 1px silver solid;
 	color: black;
-	text-align: center;
-	cursor: pointer;
-	margin: 5px;
+	text-decoration: none;
+}	
+.button:hover {
+	background: #E6E6E6;
 }
-#contact-plus {
-	font-size: 10em;
+.contact {
+	display: inline-block;
+	width: 300px;
+	line-height: 1.4em;
+	white-space: nowrap;
+	overflow: hidden;
+	margin-right: 32px;
+	color: black;
+	text-decoration: none;
 }
-
-#newcontact-container input {
-	display: block;
-	margin: auto;
-	margin-bottom: 10px;
-	font-size: 20px;
-	border: none;
-	border-radius: 8px;
-	padding: 5px;
-}
-
-.icon-bold:before {
-	content: "\f032";
-	font-family: 'FontAwesome';
-}
-.icon-italic:before {
-	content: "\f033";
-	font-family: 'FontAwesome';
-}
-.icon-list-ul:before {
-	content: "\f0ca";
-	font-family: 'FontAwesome';
-}
-.icon-list-ol:before {
-	content: "\f0cb";
-	font-family: 'FontAwesome';
-}
-.icon-strikethrough:before {
-	content: "\f0cc";
-	font-family: 'FontAwesome';
-}
-.icon-underline:before {
-	content: "\f0cd";
-	font-family: 'FontAwesome';
-}
-.icon-link:before {
-	content: "\f0c1";
-	font-family: 'FontAwesome';
-}
-
-html {
+.contactview {
 	width: 100%;
-	height: 100%;
+	box-sizing: border-box;
+	min-height: 80%;
+	padding-left: 10%;
+	padding-right: 10%;
+	padding-top: 20px;
+	padding-bottom: 25px;
 }
+.contactbuttonsview {
+	text-align: center;
+	width: 100%;
+	box-sizing: border-box;
+	height: 20%;
+	padding-left: 10%;
+	padding-right: 10%;
+	padding-top: 20px;
+	padding-bottom: 25px;
+}
+.selfview {
+	width: 100%;
+	box-sizing: border-box;
+	height: 400px;
+	padding: 25px;
+	padding-left: 10%;
+	padding-right: 10%;
+	background: url(blackorchid_2.jpg);
+	background-size: 300px 300px;
+	box-shadow: black 0 0 80px 40px inset;
+}
+
 body {
 	margin: 0;
-	background: url('gray_sand.png');
-	width: 100%;
-	text-align: center;
-	padding-bottom: 50px;
 }
-#editor-container, #contacts-container, #newcontact-container {
-	font-family: 'Arial';
-	display: inline-block;
-	margin-top: 5%;
-	width: 60%;
-	text-align: left;
-}
-#editor-container {
-	background: white;
-	border-radius: 10px;
-	box-shadow: 0 0 10px 1px black;
-}
-#editor-container .mail {
-	word-wrap: break-word;
-	padding: 20px;
-	border-bottom: 1px solid silver;
-}
-#editor-container .mail:last-child {
-	border: none;
-}
-#editor {
-	min-height: 50%;
-}
-
-#editor::selection, #editor *::selection {
-	background: lightBlue;
-}
-
-#editor:focus{
-	outline: none;
-}
-#tools {
-	position: fixed;
-	left: 15%;
-	top: 20%;
-	text-align: center;
-	width: 10px;
-}
-
-#tools * {
-	cursor: pointer;
-	margin: 10px;
-	background: transparent;
-	border: none;
-}
-
-#send, #newcontact-container button {
-	border: none;
-	display: block;
-	margin: auto;
-	background:silver;
-	height:2em;
-	line-height:2em;
-	text-align:center;
-	border-radius:4px;
-	cursor:hand;
-	padding-left:1em;
-	padding-right:1em;
-	margin-top: 30px;
+.addr {
+	margin-left: 8px;
+	color: silver;
+	font-style: italic;
 }
 
 
-[class^='icon-']:before {
-	color: black;
-	font-size: 1.5em;
-	font-family: 'FontAwesome';
+#spinner {
+	-webkit-animation: spin 2s infinite linear;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	margin-left: -50px;
+	margin-top: -50px;
 }
-
-.icon-user {
-	display: inline-block;
-	font-family: 'FontAwesome';
-	font-size: 100px;
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(359deg); }
 }
-#newcontact-container {
-	text-align:center;
-}
-
-
 
 </style>
+<script id="data" type="text/json">
+{
+	"hello": 3
+}
+</script>
 </head>
 <body>
+
+
+
+
+<svg id="spinner" width="100px" height="100px" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<path transform="translate(0, 8.736) scale(0.062)" 
+d="M496 192q0 -60 -42.5 -102t-101.5 -42q-60 0 -102 42t-42 
+102t42 102t102 42q59 0 101.5 -42t42.5 -102zM928 0q0 -53 
+-37.5 -90.5t-90.5 -37.5t-90.5 37.5t-37.5 90.5t37.5 90.5t90.5 
+37.5t90.5 -37.5t37.5 -90.5zM320 640q0 -66 -47 -113t-113 
+-47t-113 47t-47 113 t47 113t113 47t113 -47t47 -113zM1360 
+192q0 -46 -33 -79t-79 -33t-79 33t-33 79t33 79t79 33t79 
+-33t33 -79zM528 1088q0 -73 -51.5 -124.5t-124.5 -51.5t-124.5 
+51.5t-51.5 124.5t51.5 124.5t124.5 51.5t124.5 -51.5t51.5 
+-124.5zM992 1280q0 -80 -56 -136t-136 -56 t-136 56t-56 
+136t56 136t136 56t136 -56t56 -136zM1536 640q0 -40 -28 
+-68t-68 -28t-68 28t-28 68t28 68t68 28t68 -28t28 -68zM1328 
+1088q0 -33 -23.5 -56.5t-56.5 -23.5t-56.5 23.5t-23.5 
+56.5t23.5 56.5t56.5 23.5t56.5 -23.5t23.5 -56.5z"/>
+</svg>
+
+
+
+
 
 </body>
 </html>

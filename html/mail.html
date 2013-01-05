@@ -35,17 +35,9 @@ for(var i = 0; i < html.tags.length; ++i) {
 var body = document.getElementsByTagName('body')[0];
 
 
-var sendbutton = html.div({ class: 'send button'}, 'Send')
 var list = html.div({ class: 'list' })
-var searchbar = html.div({ class: 'searchbar', contenteditable: true }, 'Search...')
-var searchbutton = html.div({ class: 'search button' }, 'Search')
 
-body.appendChild(sendbutton)
-body.appendChild(searchbar)
-body.appendChild(searchbutton)
 body.appendChild(list)
-
-var text = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque at nisi quis nunc dignissim dictum. Cras bibendum nisl id libero ultrices in egestas felis pharetra. Pellentesque facilisis nulla dictum mi convallis vel volutpat tortor hendrerit.'
 
 var now = new Date().getTime()
 
@@ -76,49 +68,44 @@ function raw_entry(origin, date, body) {
 }
 
 
-for(var i = 0; i < 64; ++i) {
-	
-	var entry = raw_entry('dave', '15 days', text) 
 
-	entry.mailid = '0'
-	entry.mailsubid = '13'
-	entry.onmouseup = function(e) {
-		while(list.firstChild != undefined) {
-			list.removeChild(list.firstChild)
-		}
-
-
-		var conv = localstore[e.target.mailid]
-		for(var i = 0; i < conv.o.length; ++i) {
-			var en = conv[conv.o[i]]
-			list.appendChild(raw_entry(en.o, 
-				new Date(en.d).toDateString(), en.c))
-		}
-
-		list.classList.remove('list')
-		list.classList.add('conv-list')
-
-	}
-
-	list.appendChild(entry)
+var conv = localstore['0']
+for(var i = 0; i < conv.o.length; ++i) {
+	var en = conv[conv.o[i]]
+	list.appendChild(raw_entry(en.o, 
+		new Date(en.d).toDateString(), en.c))
 }
+
+
+var edit = html.p({ contenteditable: 'true', class: 'email-short' })
+edit.onkeypress = function(e) {
+	if(e.keyCode == 13) {
+		e.preventDefault()
+		list.insertBefore(raw_entry('you', 
+			new Date().toDateString(),
+			edit.innerHTML), edit)
+		edit.innerHTML = ''
+		window.scrollTo(0, 1000000)
+	}
+}
+
+list.appendChild(edit)
+edit.focus()
+
+
+
 
 }
 </script>
 <style type="text/css">
 
-.searchbar {
-	font: 1em sans-serif;
-	text-align: left;
-	background: white;
-	width: 20%;
-}
-
 .email-short-footer {
+	color: silver;
 	margin: 5px;
 	margin-top: 0;
 	padding-left: 1em;
 	font-size: 0.8em;
+	font-family: serif;
 }
 
 
@@ -132,74 +119,54 @@ for(var i = 0; i < 64; ++i) {
 }
 
 .email-short-footer-when:before {
-	content: ' ' 
+	content: ', ' 
 }
 
 .email-short-footer-when:after {
-	content: ' ago'
-}
-
-.button {
-	display: inline-block;
-	font: 1em sans-serif;
-	background: ghostWhite;
-	color: black;
-	cursor: hand;
-	margin: 2em;
-}
-
-.button, .searchbar {
-	box-shadow: 0 0 89px silver;
-	display: inline-block;
-	padding: 0.4em;
-	padding-left: 1em;
-	padding-right: 1em;
-	border-radius: 4px;
+	content: ' '
 }
 
 body {
-	margin: 0;
+	margin: 32px;
+	margin-bottom: 10%;
 	text-align: center;
-	background-image: url(xv.png); 
+	background-image: url(gray_jean.jpg); 
+	background-size: 150px 150px;
 }
 
-.list, .conv-list {
+.list {
 	margin: auto;
 	width: 60%;
 	text-align: justify;
 }
 
 
-.list :nth-child(odd) {
-	background: white;
-}
 
-.email-short :nth-child(odd) {
-	background: inherit;
-}
+
 
 .email-short {
 	cursor: hand;
 	border-radius: 6px;
-	font-size: 0.8em;
 	margin: 0;
 	padding: 2em;
+	font-family: sans-serif;
 }
 
 
-.conv-list .email-short {
+.list .email-short {
 	padding-top: 1em;
 	padding-bottom: 1em;
 	background: white;
 	border-radius: 0 
 }
 
-.conv-list :first-child {
+.list :first-child {
 	border-radius: 6px 6px 0 0;
 }
 
-.conv-list :last-child {
+.list :last-child {
 	border-radius: 0 0 6px 6px;
+
 }
 
 </style>
