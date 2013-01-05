@@ -29,7 +29,7 @@ html.create_element = function(tagname, rest) {
 	return t
 }
 
-html.tags = ['button', 'p', 'body', 'head', 'div', 'i', 'b', 'span', 'input'];
+html.tags = ['a', 'button', 'p', 'body', 'head', 'div', 'i', 'b', 'span', 'input'];
 
 
 for(var i = 0; i < html.tags.length; ++i) {
@@ -222,6 +222,11 @@ if(localStorage['contacts'] == undefined) {
 create_contacts(true)
 
 
+var l = html.a({ href: '/hello' }, 'LINK')
+l.onclick = function(e) {
+	e.preventDefault()
+}
+body.appendChild(l)
 
 	
 }

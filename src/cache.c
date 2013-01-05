@@ -171,6 +171,7 @@ void http_onclose(struct http_connection *http)
 	debug("Closing http connection: %d", http->socket);
 	free(http->buffer.as_void);
 	close(http->socket);
+	free(http);
 }
 
 #define CRC24_INIT 0xB704CEL
@@ -213,17 +214,15 @@ void http_ondata(struct http_connection *http)
 	} else {
 		http->buffer.len += len;
 
-			bfound f = bfind(http->buffer, Bs("\r\n\r\n"));
+		bfound f = bfind(http->buffer, Bs("\r\n\r\n"));
 
-			if (f.found.len == 0) {
-				debug("Partial http header.");
-				return;
-			}
+		if (f.found.len == 0) {
+			debug("Partial http header.");
+			return;
+		}
 
-			bytes header = f.before;
-			bytes body = f.after;
-
-
+		bytes header = f.before;
+		bytes body = f.after;
 
 		if (http->buffer.as_char[0] == 'G') {
 			f = bfind(header, Bs(" "));
@@ -290,7 +289,8 @@ void http_ondata(struct http_connection *http)
 				goto bad_request;
 
 			if (body.len < contentlen) {
-				debug("Partial body. %zd out of %zd received.",body.len, contentlen);
+				debug("Partial body. %zd out of %zd received.",
+				      body.len, contentlen);
 				return;
 			}
 
@@ -417,10 +417,10 @@ int main(int argc, char **argv)
 				debug("Error reported: %s", strerror(errno));
 				object->onclose(object);
 			}
-			if (events & EPOLLIN) {
+			else if (events & EPOLLIN) {
 				object->ondata(object);
 			}
-			if (events & EPOLLHUP) {
+			else if (events & EPOLLHUP) {
 				debug("Hangup received on socket %d", socket);
 				object->onclose(object);
 			}

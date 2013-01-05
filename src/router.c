@@ -1,142 +1,236 @@
+#include <stdint.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdbool.h>
 #include <stdio.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/epoll.h>
+#include <stdbool.h>
 #include <errno.h>
-
+#include <time.h>
 
 #include "bytes.c"
-#include "p2p.c"
 
+#include "base64.c"
+#include "epoll.c"
+#include "crc.c"
 
-int indata(struct sockaddr_in6 addr, bytes data, void * additional) {
-	debug("Incoming email.")
-	struct p2p_st * p2p = additional;
+const size_t cache_key_bytes = 33;
 
-	bprint(data);	
+typedef struct {
+	uint8_t data[33];
+} cachekey;
 
-	debug("End of email.")
-	p2psend(p2p, data, p2pendpoint);
-	return 0; }
-
-
-int interm(int epoll, struct objdata * obj) { 
-	size_t len = 4096;
-	char buf[len];
-	debug("Received data from terminal!");
-	ssize_t r = read(0, buf, len);
-
-	
-	struct p2p_st * p2p = *((struct p2p_st**)(obj+1));
-
-	bytes re = { buf, r };
-
-	bfound f = bfind(re, Bs("list"));
-	if(f.found.length > 0) {
-		debug("List command recevied");
-		peertreepreorder(&p2p->peer, &p2pprint, 0); }
-
-	f = bfind(re, Bs("ping "));
-	if(f.found.length > 0) {
-		debug("Ping command received");
-
-		f = bfind(f.after, B(' '));
-		struct sockaddr_in6 addr;
-		memset(&addr, 0, sizeof(addr));
-		f.found.as_char[0] = 0;
-		inet_pton(AF_INET6, f.before.as_void, &addr.sin6_addr);
-		f = bfind(f.after, B('\n'));
-		f.found.as_char[0] = 0;
-		addr.sin6_port = htons(atoi(f.before.as_char));
-		addr.sin6_family = AF_INET6;
-		p2ppingpeer(p2p, &addr);
-		
-	}
-	f = bfind(re, Bs("logging"));
-	if(f.found.length > 0) {
-		debug("Flipping logging bit!");
-		logging = !logging; }
-	
-	return 0; }
-
-struct frame
+int setup_socket(uint16_t port, void *ondata, void *onclose)
 {
-	ssize_t recvd;
-	union 
-	{
-		uint32_t len;
-		uint8_t frame[4092];
+	int sock = socket(AF_INET6, SOCK_STREAM, 0);
+
+	int r = true;
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &r, sizeof(r));
+
+	struct sockaddr_in6 def = {
+		AF_INET6,
+		htons(port),
+		0, 0, 0
 	};
+
+	if (bind(sock, (void *)&def, sizeof(def))) {
+		debug("Bind failed!");
+		return -1;
+	}
+
+	listen(sock, 1024);
+
+	struct generic_epoll_object *object = malloc(sizeof(*object));
+
+	object->fd = sock;
+	object->ondata = ondata;
+	object->onclose = onclose;
+
+	epoll_add(sock, object);
+
+	return sock;
+}
+
+struct stream_connection;
+
+typedef void (*stream_fn) (struct stream_connection *);
+
+struct stream_connection {
+	int socket;
+	size_t streamid;
+	stream_fn ondata;
+	stream_fn onclose;
+};
+
+void stream_onclose(struct stream_connection *stream)
+{
+	debug("Closing stream connection: %d", stream->socket);
+	close(stream->socket);
+	free(stream);
+}
+
+int stream[1024];
+size_t streamlen = 0;
+
+void stream_ondata(struct stream_connection *stream)
+{
+}
+
+struct http_connection;
+
+typedef void (*http_fn) (struct http_connection *);
+
+struct http_connection {
+	int socket;
+	http_fn ondata;
+	http_fn onclose;
+	bytes buffer;
+};
+
+void http_onclose(struct http_connection *http)
+{
+	debug("Closing http connection: %d", http->socket);
+	free(http->buffer.as_void);
+	close(http->socket);
+	free(http);
+}
+
+void http_ondata(struct http_connection *http)
+{
+	ssize_t len = recv(http->socket,
+			   http->buffer.as_void + http->buffer.len,
+			   4096 - http->buffer.len, 0);
+
+	if (len == 0) {
+		http->onclose(http);
+	} else if (len < 0) {
+		debug("Read error! %s", strerror(errno));
+		http->onclose(http);
+	} else {
+		http->buffer.len += len;
+
+		bfound f = bfind(http->buffer, Bs("\r\n\r\n"));
+
+		if (f.found.len == 0) {
+			debug("Partial http header.");
+			return;
+		}
+
+		bytes header = f.before;
+		bytes body = f.after;
+
+		if (http->buffer.as_char[0] == 'G') {
+			f = bfind(header, Bs(" "));
+			f = bfind(f.after, Bs(" "));
+			
+
+			if(bcmp(f.before, Bs("/stream")) == 0) {
+				debug("NEW STREAMING SOCKET!");
+				stream[streamlen] = http->socket;
+				streamlen++;
+
+					
+			}
+
+			goto complete_request;
+
+		} else if (http->buffer.as_char[0] == 'P') {
+			f = bfind(header, Bs(" "));
+			f = bfind(f.after, Bs(" "));
+			bytes addr = bslice(f.before, 1, 0);
+
+			if (addr.len == 0)
+				goto bad_request;
+
+			f = bfind(header, Bs("Content-Length: "));
+
+			if (f.found.len == 0)
+				goto bad_request;
+
+			f = bfind(f.after, Bs("\r\n"));
+
+			int contentlen = btoi(f.before);
+
+			if (contentlen <= 0)
+				goto bad_request;
+
+			if (body.len < contentlen) {
+				debug("Partial body. %zd out of %zd received.",
+				      body.len, contentlen);
+				return;
+			}
+
+			bytes reply = balloc(4096);
+			reply.length = snprintf(reply.as_char, 4096,
+				"Content-Length: %zd\r\n"
+				"Recipient: ", body.len);
+			bytes finish = Bs("\r\n\r\n");
+
+
+			for(int i = 0; i <streamlen; i++) {
+				send(stream[i], reply.as_void, reply.len, 0);
+				send(stream[i], addr.as_void, addr.len, 0);
+				send(stream[i], finish.as_void, finish.len, 0);
+				send(stream[i], body.as_void, body.len, 0);
+			}
+
+			bfree(reply);
+
+
+
+			goto complete_request;
+		} else {
+			goto bad_request;
+		}
+	}
+	return;
+
+ bad_request:
+	debug("Bad request");
+
+	bytes resp = Bs("HTTP/1.1 400 Bad Request\r\n\r\n");
+	send(http->socket, resp.as_void, resp.len, 0);
+	http->onclose(http);
+	goto complete_request;
+
+ complete_request:
+	http->buffer.len = 0;
+}
+
+void httplistener_ondata(struct generic_epoll_object *data)
+{
+	int socket = data->fd;
+	int accepted = accept(socket, 0, 0);
+	debug("Accepting a new connection: %d", accepted);
+	struct http_connection *c = malloc(sizeof(*c));
+	c->socket = accepted;
+	c->ondata = http_ondata;
+	c->onclose = http_onclose;
+	c->buffer.len = 0;
+	c->buffer.as_void = malloc(4096);
+
+	epoll_add(accepted, c);
+}
+
+void httplistener_onclose(struct generic_epoll_object *data)
+{
+	debug("Closing listener socket. %d", data->fd);
+	close(data->fd);
 };
 
 
+int main(int argc, char **argv)
+{
 
-int inmail(int epoll, struct objdata * obj) { 
-	int * slots;
-	struct frame * frame_freelist;
+	epoll = epoll_create(1);
 
-	uint32_t framelen;
-	ssize_t r = recv(obj->fd, &framelen, sizeof(framelen), MSG_PEEK);
+	int http = setup_socket(8080, httplistener_ondata,
+				httplistener_onclose);
 
-	if(r < 0)
-	{
-		debug("An error has occured.");
-	}
-	else if(r == 0)
-	{
-		debug("Connection closed by peer.");
-		close(obj->fd);
-	}
-	else
-	{
-		if(r < sizeof(framelen))
-		{
-			return 0;
-		}
-		
-		struct frame * buffer;
-		buffer->recvd = recv(obj->fd, buffer->frame, 4092, 0);
-
-		if(buffer->recvd == buffer->len) 
-		{
-			// Interpret the frame.
-		}
-	}
-}	
-
-
-int main(int argc, char ** argv) {
-
-	int epoll = epoll_create(1);
-	uint16_t cacheport = 8080;
-	int slot_exp = 10;
-	int slot_len = 1024;
-
-	int slots = malloc(sizeof(int) * (1 << slot_exp) * slot_len);
-
-	int cachesock = socket(AF_INET6, SOCK_STREAM, 0);
-	prepare_socket(cachesock, cacheport);
-	
-	struct objdata_ex * data = malloc(sizeof(*data));
-	prepare_objdata_ex(data, 0, &interm, &err, &hup, &kill, &p2p);
-	epoll_add(epoll, cachesock, data);
-
-	// Interactive mode support.
-	if(argc == 2 && strcmp(argv[0], "-i")) {
-		printf("Interactive mode. Commands: list, add, remove, ping.\n");
-
-
-		struct objdata_ex * data = malloc(sizeof(*data));
-
-		prepare_objdata_ex(data, 0, &interm, &err, &hup, &kill, &p2p);
-
-		epoll_add(epoll, 0, data);
-	}
-
-	eventloop(epoll);
-	return 0; }
-
-
+	epoll_listen();
+	return 0;
+}
