@@ -3,11 +3,12 @@
 
 #include <unistd.h>
 #include <inttypes.h>
-#include <stdint.h>
+#include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <fcntl.h>
+#include <stdio.h>
+#include <stdint.h>
 
 int logging = 1;
 #define debug(d...) { if(logging) { printf("[f: %s l: %d] ", __FILE__, __LINE__); \
@@ -21,12 +22,16 @@ typedef struct {
 	union {
 		char *as_char;
 		void *as_void;
+		const void *as_cvoid;
+		const char *as_cchar;
 	};
 	union {
 		size_t length;
 		size_t len;
 	};
 } bytes;
+
+bytes bvoid = { 0, 0 };
 
 /* All functions here take into account the specified length of their arguments.
 No memory allocation is done! */
@@ -51,23 +56,57 @@ bytes balloc(size_t length)
 	return r;
 }
 
-void bfree(bytes buf)
+typedef struct 
 {
-	free(buf.as_char);
+	bytes first, second;
+} bpair;
+
+bpair bprintf(bytes b, const char *fmt, ...)
+{
+	va_list ptr;
+	va_start(ptr, fmt);
+	bytes result = b;
+	result.len = vsnprintf(b.as_void, b.len, fmt, ptr);
+	va_end(ptr);
+	return (bpair) {
+		result, 
+		(bytes) {
+			.as_void = result.as_void + result.len,
+			.len = b.len - result.len
+		}
+	};
+}
+	
+int bscanf(bytes b, const char *fmt, ...)
+{
+	va_list ptr;
+	va_start(ptr, fmt);
+	int r;
+	FILE * f = fmemopen(b.as_void, b.len, "r");
+	r = vfscanf(f, fmt, ptr);
+	va_end(ptr);
+	return r;
 }
 
-bytes bfromstr(char *c_str)
+void bfree(bytes * buf)
+{
+	free(buf->as_char);
+	buf->as_void = 0;
+	buf->len = 0;
+}
+
+bytes bfromstr(const char *c_str)
 {
 	size_t null = 0;
 	while (c_str[null] != 0) {
 		null++;
 	}
 
-	bytes r = { c_str, null };
+	bytes r = { (void *)c_str, null };
 	return r;
 }
 
-bytes atob(bytes buf, int number)
+bytes itob(bytes buf, int number)
 {
 	if (number == 0) {
 		buf.as_char[0] = '0';
@@ -95,17 +134,29 @@ bytes atob(bytes buf, int number)
 	}
 }
 
-int btoi(bytes b)
+int64_t btoi64(bytes b)
 {
-	int acc = 0;
+	int64_t acc = 0;
+	bool neg = false;	
+	int i = 0;
 
-	for (int i = 0; i < b.length; i++) {
-		acc *= 10;
-		acc += b.as_char[i] - '0';
+	if(b.len > 0 && b.as_char[0] == '-') {
+		neg = true;
+		i++;
 	}
 
-	return acc;
+	for (; i < b.len; i++) {
+		acc *= 10;
+		int digit = b.as_char[i] - '0';
+		if(digit > 9 || digit < 0)
+			return 0;
+		acc += digit;
+	}
+
+	return neg == true ? -acc : acc;
 }
+
+int btoi(bytes b) { return btoi64(b); }
 
 bytes bslice(bytes string, size_t start, size_t end)
 {
@@ -183,10 +234,17 @@ bfound bfind(bytes in, bytes what)
 	return f;
 }
 
-int bcmp(bytes first, bytes second)
+int bcmp2(bytes first, bytes second)
 {
 	size_t length = min(first.length, second.length);
 	return memcmp(first.as_char, second.as_char, length);
+}
+
+int bsame(bytes first, bytes second)
+{
+	if (first.length != second.length)
+		return -1;
+	return memcmp(first.as_char, second.as_char, first.length);
 }
 
 #endif

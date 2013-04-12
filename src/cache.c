@@ -398,7 +398,7 @@ int main(int argc, char **argv)
 */
 	epoll = epoll_create(1);
 
-	int http = setup_socket(8080, httplistener_ondata,
+	int http = setup_socket(8081, httplistener_ondata,
 				httplistener_onclose);
 
 	int max_events = 1024;

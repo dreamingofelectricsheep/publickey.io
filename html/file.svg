@@ -1,0 +1,9 @@
+<svg width="100px" height="100px" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<path transform="scale(1, -1) scale(0.06493506493) translate(0, -1400)"
+d="M128 0h1024v768h-416q-40 0 -68 28t-28 68v416h-512v-1280zM768 
+896h299l-299 299v-299zM1280 768v-800q0 -40 -28 -68t-68 -28h-1088q-40 
+0 -68 28t-28 68v1344q0 40 28 68t68 28h544q40 0 88 -20t76 -48l408 
+-408q28 -28 48 -76t20 -88z" />
+</svg>
+
+

@@ -29,7 +29,7 @@ html.create_element = function(tagname, rest) {
 	return t
 }
 
-html.tags = ['a', 'button', 'p',  'head', 'div', 'i', 'b', 'span', 'input'];
+html.tags = ['br', 'object', 'a', 'button', 'p',  'head', 'div', 'i', 'b', 'span', 'input'];
 
 
 for(var i = 0; i < html.tags.length; ++i) {
@@ -44,7 +44,7 @@ var contacts = JSON.parse(localStorage['contacts'])
 if(typeof contacts != 'object') {
 	contacts = []
 }
-
+/*
 with(html) {
 	var contactview = div({ class: 'contactview' })
 
@@ -61,13 +61,66 @@ body.appendChild(html.div({ class: 'contactbuttonsview' },
 	html.a({ href:'#', class: 'button' }, 'Add contact')))
 
 body.appendChild(html.div({ class: 'selfview' }))	
-
+*/
 body.removeChild(document.getElementById('spinner'))
+
+body.appendChild(html.span({ class: 'bigq' }, 
+	'Where would you like to store your keys?'))
+
+body.appendChild(html.div({ class: 'option' },
+	html.object({
+		data: 'brain.svg',
+		type: 'image/svg+xml'}),
+	'I will remember a passphrase',
+	html.div({ class: 'example'},
+		'This is an example of a good passphrase.', html.br(), html.br(),
+		'As you can see - it\'s pretty long.', html.br(),html.br(),
+		'Punctuation is important - one more or one less line break, space or ',
+		'a capital letter and your pass phrase will be invalid.', html.br(),html.br(),
+		'Write a short story or a poem - imagined scenario is easy to remember.',
+		html.br(), html.br(),
+		'Ones are red', html.br(),
+		'Zeroes are blue', html.br(),
+		'I am no poet', html.br(),
+		'Beep boop')))
+
+body.appendChild(html.div({ class: 'option' },
+	html.object({
+		data: 'file.svg',
+		type: 'image/svg+xml'}),
+	'In a file'))
+
 
 
 }
 </script>
 <style>
+.option object {
+	display: block;
+	margin: auto;
+	margin-bottom: 30px;
+}
+.option .example {
+	font-style: italic;
+	margin: 8px;
+	font-size: 18px;
+	color: gray;
+	text-align: left;
+}
+.option {
+	font-size: 20px;
+	display: inline-block;
+	width: 40%;
+	box-sizing: border-box;
+	padding: 50px;
+	vertical-align:top;
+}
+.bigq {
+	margin: 40px;
+	display: block;
+	text-align: center;
+	font-size: 50px;
+}
 .button {
 	padding: 4px 12px;
 	background-image: -webkit-linear-gradient(top, white, #E6E6E6);
@@ -124,6 +177,7 @@ body.removeChild(document.getElementById('spinner'))
 
 body {
 	margin: 0;
+	text-align: center;
 }
 .addr {
 	margin-left: 8px;
@@ -140,6 +194,10 @@ body {
 	margin-left: -50px;
 	margin-top: -50px;
 }
+
+.spinner {
+	-webkit-animation: spin 2s infinite linear;
+}
 @-webkit-keyframes spin {
   0% { -webkit-transform: rotate(0deg); }
   100% { -webkit-transform: rotate(359deg); }
@@ -149,7 +207,12 @@ body {
 <script id="data" type="text/json">
 {
 	"hello": 3
+	
 }
+Ones are red
+Zeroes are blue
+I am no poet
+Beep boop
 </script>
 </head>
 <body>
@@ -157,7 +220,8 @@ body {
 
 
 
-<svg id="spinner" width="100px" height="100px" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg id="spinner" class="spinner" width="100px" height="100px" 
+xmlns="http://www.w3.org/2000/svg" version="1.1">
 <path transform="translate(0, 8.736) scale(0.062)" 
 d="M496 192q0 -60 -42.5 -102t-101.5 -42q-60 0 -102 42t-42 
 102t42 102t102 42q59 0 101.5 -42t42.5 -102zM928 0q0 -53 
@@ -173,10 +237,5 @@ d="M496 192q0 -60 -42.5 -102t-101.5 -42q-60 0 -102 42t-42
 1088q0 -33 -23.5 -56.5t-56.5 -23.5t-56.5 23.5t-23.5 
 56.5t23.5 56.5t56.5 23.5t56.5 -23.5t23.5 -56.5z"/>
 </svg>
-
-
-
-
-
 </body>
 </html>
