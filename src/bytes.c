@@ -3,12 +3,11 @@
 
 #include <unistd.h>
 #include <inttypes.h>
-#include <fcntl.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <stdio.h>
-#include <stdint.h>
+#include <fcntl.h>
 
 int logging = 1;
 #define debug(d...) { if(logging) { printf("[f: %s l: %d] ", __FILE__, __LINE__); \
@@ -56,8 +55,7 @@ bytes balloc(size_t length)
 	return r;
 }
 
-typedef struct 
-{
+typedef struct {
 	bytes first, second;
 } bpair;
 

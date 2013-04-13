@@ -24,10 +24,26 @@ var contacts = new function()
 		if(card.id == undefined)
 			card.id = new Date().getTime()
 
-		this.list.push(card)
-		this.by_id[card.id] = card
+		if(this.by_id[card.id] == undefined)
+		{
+			this.list.push(card)
+			this.by_id[card.id] = card
+		}
+		else
+		{
+			var old = this.by_id[card.id]
+			each(card, function(v, k) { old[k] = v })
+		}
 		this.store()
 	}
+
+	this.remove = function(id)
+	{
+		delete this.by_id[id]
+		this.list.splice(this.list.indexOf(id), 1)
+		this.store()
+	}
+
 	this.store = function()
 	{
 		localStorage['contacts'] = JSON.stringify(this.list)
@@ -57,10 +73,19 @@ function contactsview()
 
 			each(cat, function(card)
 				{
-					cat_view.appendChild(tags.div({ class: 'contact' },
+					var cont = tags.div({ class: 'contact' },
 						card.name,
 						card.email.length == 0 ? undefined :
-							tags.span({ class: 'email' }, ' <' + card.email + '>')))
+							tags.span({ class: 'email' }, ' <' + card.email + '>'))
+
+					cont.$card = card
+					cont.onclick = function()
+					{
+						c.parentElement.appendChild(cardview(this.$card))
+						c.parentElement.removeChild(c)
+					}
+
+					cat_view.appendChild(cont)
 				})
 
 			c.appendChild(cat_view)
@@ -71,6 +96,7 @@ function contactsview()
 	add_new.onclick = function()
 	{
 		c.parentElement.appendChild(cardview())
+		c.parentElement.removeChild(c)
 	}
 
 	c.appendChild(add_new)
@@ -96,7 +122,9 @@ function cardview(contact)
 		key: textarea({})
 	}
 
-	var save = input({ type: 'button', value: 'Save' })
+	var save = input({ type: 'button', value: 'Save' }),
+		remove = input({ type: 'button', value: 'Remove' }),
+		discard = input({ type: 'button', value: 'Discard Changes' })
 
 	c = table({ class: 'cardview' },
 		caption({}, 'Editing a contact'),
@@ -112,7 +140,7 @@ function cardview(contact)
 		tr({},
 			td({}, 'Public Key'),
 			td({}, inputs.key)),
-		tr({}, td({ colspan: '2' }, save)))
+		tr({}, td({ colspan: '2' }, save, remove, discard)))
 
 	}
 
@@ -121,8 +149,14 @@ function cardview(contact)
 			var n = '$' + k
 			c[n] = v
 
-			if(contact[k] != undefined)
-				v.value = contact[k]
+			var item = contact[k]
+			if(item != undefined)
+			{
+				if(item instanceof Array)
+					v.value = item.join(' ')
+				if(typeof item == 'string')
+					v.value = item
+			}
 		})
 
 	save.onclick = function()
@@ -135,11 +169,20 @@ function cardview(contact)
 				tags: inputs.tags.value.split(' '),
 				key: inputs.key.value
 			})
+		discard.click()
+	}
+
+	discard.onclick = function()
+	{
+		c.parentElement.appendChild(contactsview())
 		c.parentElement.removeChild(c)
 	}
-	
 
-				
+	remove.onclick = function()
+	{
+		contacts.remove(contact.id)
+		discard.click()
+	}
 
 	return c
 }
