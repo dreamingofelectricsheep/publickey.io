@@ -81,18 +81,20 @@ return function view_contacts()
 
 			each(cat, function(card)
 				{
+					var edit = tags.span({ class: 'clickable' }, '●')
 					var cont = tags.div({ class: 'contact' },
+						edit,
 						card.name,
 						card.email.length == 0 ? undefined :
 							tags.span({ class: 'email' }, ' <' + card.email + '>'))
 
-					cont.$card = card
-					cont.onclick = function()
+					edit.onclick = function()
 					{
-						c.parentElement.appendChild(view_card(this.$card, function(p)
+						c.parentElement.appendChild(view_card(card, function(p)
 							{
 								p.appendChild(view_contacts())
 							}))
+
 						c.parentElement.removeChild(c)
 					}
 
@@ -208,6 +210,8 @@ return function(contact, ondone)
 })
 	
 
+module('model_conversation', function() {
+})
 
 
 module('entry', function(view_contacts, view_card, dom) {
