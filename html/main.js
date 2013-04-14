@@ -1,6 +1,8 @@
 
 
 
+module('model_contacts', function() {
+
 var contacts = new function()
 {
 	try
@@ -50,13 +52,19 @@ var contacts = new function()
 	}
 }
 
-function contactsview()
+return contacts
+})
+
+
+module('view_contacts', function(tags, model_contacts, view_card) {
+
+return function view_contacts()
 {
 	var c = tags.div({ class: 'contacts' })
 
 	var categories = {}
 
-	each(contacts.list, function(card)
+	each(model_contacts.list, function(card)
 		{
 			each(card.tags, function(tag)
 				{ 
@@ -81,7 +89,10 @@ function contactsview()
 					cont.$card = card
 					cont.onclick = function()
 					{
-						c.parentElement.appendChild(cardview(this.$card))
+						c.parentElement.appendChild(view_card(this.$card, function(p)
+							{
+								p.appendChild(view_contacts())
+							}))
 						c.parentElement.removeChild(c)
 					}
 
@@ -95,7 +106,10 @@ function contactsview()
 
 	add_new.onclick = function()
 	{
-		c.parentElement.appendChild(cardview())
+		c.parentElement.appendChild(view_card(undefined, function(p)
+			{
+				p.appendChild(view_contacts())
+			}))
 		c.parentElement.removeChild(c)
 	}
 
@@ -103,9 +117,12 @@ function contactsview()
 
 	return c
 }
+})
 
 
-function cardview(contact)
+module('view_card', function(tags, model_contacts) {
+
+return function(contact, ondone)
 {
 	var c, inputs;
 
@@ -161,7 +178,7 @@ function cardview(contact)
 
 	save.onclick = function()
 	{
-		contacts.change(
+		model_contacts.change(
 			{ 
 				id: contact.id, 
 				name: inputs.name.value,
@@ -174,25 +191,28 @@ function cardview(contact)
 
 	discard.onclick = function()
 	{
-		c.parentElement.appendChild(contactsview())
-		c.parentElement.removeChild(c)
+		var p = c.parentElement
+		p.removeChild(c)
+
+		ondone(p)
 	}
 
 	remove.onclick = function()
 	{
-		contacts.remove(contact.id)
+		model_contacts.remove(contact.id)
 		discard.click()
 	}
 
 	return c
 }
+})
 	
 
 
 
-window.onload = function() {
+module('entry', function(view_contacts, view_card, dom) {
 
-var body = document.getElementsByTagName('body')[0]
+var body = dom.body
 
 openpgp.init()
 
@@ -204,18 +224,7 @@ if(openpgp.keyring.privateKeys.length == 0)
 	openpgp.keyring.store()
 }
 
-body.appendChild(contactsview())
+body.appendChild(view_contacts())
 
-
-
-
-
-
-
-
-
-
-
-
-}
+})
 
