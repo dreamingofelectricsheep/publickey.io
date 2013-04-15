@@ -246,7 +246,7 @@ email.prototype =
 	},
 	updateid: function()
 	{
-		this.id = jsSHA.sha256(this.ciphertext)
+		this.id = str_sha256(this.ciphertext)
 	}
 }
 
@@ -278,8 +278,24 @@ return function()
 
 	editor.$send.onclick = function()
 	{
-		var pubkey = editor.$pubkey.value,
-			mail = editor.$text.value
+		var mail = editor.$text.value,
+			priv_key = openpgp.keyring.privateKeys[0].obj,
+			pub_key = openpgp.read_publicKey(editor.$pubkey.value)
+
+		if (pub_key < 1)
+		{
+			alert('Error processing the public key!')
+			return
+		}
+
+		priv_key.decryptSecretMPIs('')
+
+		var encrypted = openpgp.write_signed_and_encrypted_message(
+			priv_key,
+			pub_key,
+			mail)
+
+		console.log(openpgp_encoding_deArmor(encrypted))
 	}
 
 	return editor
@@ -310,5 +326,6 @@ var emails = JSON.parse(localStorage['emails_all'])
 body.appendChild(view_all_emails())
 
 })
+
 
 
