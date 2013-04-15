@@ -84,9 +84,11 @@ return function view_contacts()
 					var edit = tags.span({ class: 'clickable' }, '●')
 					var cont = tags.div({ class: 'contact' },
 						edit,
-						card.name,
-						card.email.length == 0 ? undefined :
-							tags.span({ class: 'email' }, ' <' + card.email + '>'))
+						tags.span({ name: 'messages' },
+							card.name,
+							card.email.length == 0 ? undefined :
+								tags.span({ class: 'email' }, ' <' 
+									+ card.email + '>')))
 
 					edit.onclick = function()
 					{
@@ -210,11 +212,83 @@ return function(contact, ondone)
 })
 	
 
-module('model_conversation', function() {
+module('model_email', function() {
+
+function email(id)
+{
+	try
+	{
+		var self = this
+		each(JSON.parse(localStorage['email:' + id]),
+			function(v, k)
+			{
+				self[k] = v
+			})
+	}
+	catch(e)
+	{
+		this.ciphertext = ''
+	}
+}
+
+email.prototype = 
+{
+	store: function()
+	{
+		if(this.id != undefined)
+			localStorage['email:' + this.id] = JSON.stringify(this.ciphertext)
+	},
+	put: function(ciphertext)
+	{
+		this.ciphertext = ciphertext
+		this.updateid()
+		this.store()
+	},
+	updateid: function()
+	{
+		this.id = jsSHA.sha256(this.ciphertext)
+	}
+}
+
+})
+
+module('view_all_emails', function(tags) {
+return function(list)
+{
+	var view = tags.table({})
+
+	each(list, function(email)
+		{
+			view.appendChild(tags.tr({},
+				tags.td({}, email.id),
+				tags.td({}, email.date),
+				tags.td({}, email.peer)))
+		})
+	return view
+}
+})
+
+module('view_new_email', function(tags, model_email) {
+return function()
+{
+	var editor = tags.div({},
+		tags.textarea({ name: 'pubkey' }),
+		tags.textarea({ name: 'text' }),
+		tags.input({ name: 'send', type: 'button', value: 'Send' }))
+
+	editor.$send.onclick = function()
+	{
+		var pubkey = editor.$pubkey.value,
+			mail = editor.$text.value
+	}
+
+	return editor
+}
 })
 
 
-module('entry', function(view_contacts, view_card, dom) {
+module('entry', function(view_contacts, view_card, dom,
+	view_all_emails, view_new_email) {
 
 var body = dom.body
 
@@ -229,6 +303,12 @@ if(openpgp.keyring.privateKeys.length == 0)
 }
 
 body.appendChild(view_contacts())
+body.appendChild(view_new_email())
+
+var emails = JSON.parse(localStorage['emails_all'])
+
+body.appendChild(view_all_emails())
 
 })
+
 
