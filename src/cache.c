@@ -68,6 +68,8 @@ struct maildb *mail = 0;
 
 
 #include "tcp.c"
+#include "http.c"
+#include "sha256.c"
 
 
 struct tcp_ondata_handler_result tcp_ondata_handler(bytes buffer)
@@ -79,12 +81,7 @@ struct tcp_ondata_handler_result tcp_ondata_handler(bytes buffer)
 	{
 		bytes pubkey = bslice(req.addr, 1, 0);
 
-			bytes addrb64 = s.before;
-			bytes tmp = balloc(max(addrb64.len + 4, 33));
-			memset(tmp.as_void, 0, 33);
-			bytes addr = base64_decode(addrb64, tmp);
-
-			time_t time = btoi(s.after);
+		pubkey = base64_decode(pubkey, pubkey);
 
 			struct cache **mailbox = cachefind(&db, addr.as_void);
 
