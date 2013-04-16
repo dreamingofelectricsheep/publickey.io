@@ -1,5 +1,73 @@
 
 
+module('view_keys', function(tags) {
+return function()
+{
+	var panel = tags.div({ class: 'overlay' },
+		tags.div({ name: 'mgr', class: 'box' }))
+
+	var close = tags.div({ class: 'close-button' }, 'Close')
+	close.onclick = function()
+	{
+		panel.parentElement.removeChild(panel)
+	}
+
+	panel.$mgr.appendChild(close)
+
+	var key = openpgp.keyring.privateKeys[0]
+
+	if(key != undefined)
+	{
+		panel.$mgr.appendChild(tags.div({ class: 'armored' },
+			key.armored))
+
+		var button = tags.div({ class: 'button' }, 'Discard this key')
+		button.onclick = function()
+		{
+			openpgp.keyring.removePrivateKey(0)
+		}
+
+		panel.$mgr.appendChild(button)
+	}
+	else
+	{
+		panel.$mgr.appendChild(tags.div({ style: 'text-align: center;' },
+			'You have no keys! Without a key, you can not send secure messages.'))
+
+		var button = tags.div({ class: 'button' }, 'Generate a new key')
+
+		panel.$mgr.appendChild(button)
+		
+		button.onclick = function()
+		{
+			var key = openpgp.generate_key_pair(1, 512, '', '')
+			openpgp.keyring.importPrivateKey(key.privateKeyArmored, '')
+			openpgp.keyring.importPublicKey(key.publicKeyArmored)
+			openpgp.keyring.store()
+		}
+	}
+
+
+	return panel
+}
+})
+
+module('view_key_icon', function(tags, view_keys) {
+return function() 
+{
+	var icon = tags.div({ class: 'key icon-key icon-2x' })
+
+	icon.onclick = function()
+	{
+		this.parentElement.appendChild(view_keys())
+	}
+
+	return icon
+
+}
+})
+	
+
 
 module('model_contacts', function() {
 
@@ -304,19 +372,15 @@ return function()
 
 
 module('entry', function(view_contacts, view_card, dom,
-	view_all_emails, view_new_email) {
+	view_all_emails, view_new_email, view_key_icon) {
 
 var body = dom.body
 
+body.appendChild(view_key_icon())
+
 openpgp.init()
 
-if(openpgp.keyring.privateKeys.length == 0)
-{
-	var key = openpgp.generate_key_pair(1, 4096, '', '')
-	openpgp.keyring.importPrivateKey(key.privateKeyArmored, '')
-	openpgp.keyring.importPublicKey(key.publicKeyArmored)
-	openpgp.keyring.store()
-}
+
 
 body.appendChild(view_contacts())
 body.appendChild(view_new_email())
