@@ -14,159 +14,70 @@
 
 #include "bytes.c"
 
-const size_t cache_key_bytes = 32
+const size_t hash_bytes = 32
 
-typedef struct 
+struct hash
 {
-	uint8_t data[cache_key_bytes];
-} cachekey;
+	uint8_t data[public_key_hash_bytes];
+};
 
-struct diskitem 
+struct message_header
 {
 	time_t time;
-	cachekey addr;
 	size_t len;
+	size_t public_keys;
 };
 
-typedef time_t itemcachekey;
+#define MAP(var) maildb ## var
+typedef struct hash MAP(key);
+typedef struct message_header* MAP(payload);
 
-typedef struct diskitem *itemcachepayload;
-
-typedef struct itemcache *cachepayload;
-
-int itemcachecmp(itemcachekey * first, itemcachekey * second)
+int MAP(cmp)(MAP(key) * first, MAP(key) * second)
 {
-	return memcmp(first, second, sizeof(*first));
+	return memcmp(first, second, sizeof(*first);
 }
-
-int cachecmp(cachekey * first, cachekey * second)
-{
-	return memcmp(first, second, sizeof(*first));
-}
-
-#define MAP(var) cache ## var
-#include "map.c"
-#undef MAP
-#define MAP(var) itemcache ## var
 #include "map.c"
 #undef MAP
 
-int epoll;
-struct cache *db = 0;
-
-int epoll_add(int fd, void *data)
+struct list_node
 {
-	struct epoll_event e;
-	e.events = EPOLLIN;
-	e.data.ptr = data;
-
-	if (epoll_ctl(epoll, EPOLL_CTL_ADD, fd, &e) < 0) {
-		debug("Stdin epoll_ctl failed");
-		return -1;
-	}
-
-	return 0;
-}
-
-struct generic_epoll_object;
-
-typedef void (*epoll_fn) (struct generic_epoll_object *);
-
-struct generic_epoll_object
-{
-	int fd;
-	epoll_fn ondata;
-	epoll_fn onclose;
+	struct list_node *next;
+	struct hash payload;
 };
 
-int setup_socket(uint16_t port, void *ondata, void *onclose)
+struct list
 {
-	int sock = socket(AF_INET6, SOCK_STREAM, 0);
-
-	int r = true;
-	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &r, sizeof(r));
-
-	struct sockaddr_in6 def = {
-		AF_INET6,
-		htons(port),
-		0, 0, 0
-	};
-
-	if (bind(sock, (void *)&def, sizeof(def))) {
-		debug("Bind failed!");
-		return -1;
-	}
-
-	listen(sock, 1024);
-
-	struct generic_epoll_object *object = malloc(sizeof(*object));
-
-	object->fd = sock;
-	object->ondata = ondata;
-	object->onclose = onclose;
-
-	epoll_add(sock, object);
-
-	return sock;
-}
-
-struct http_connection;
-
-typedef void (*http_fn) (struct http_connection *);
-
-struct http_connection
-{
-	int socket;
-	http_fn ondata;
-	http_fn onclose;
-	bytes buffer;
+	struct list_node *first, *last;
 };
 
-void http_onclose(struct http_connection *http)
+
+#define MAP(var) publickeydb ## var
+typedef struct hash MAP(key);
+typedef struct list MAP(payload);
+
+int MAP(cmp)(MAP(key) * first, MAP(key) * second)
 {
-	debug("Closing http connection: %d", http->socket);
-	free(http->buffer.as_void);
-	close(http->socket);
-	free(http);
+	return memcmp(first, second, sizeof(*first);
 }
+#include "map.c"
+#undef MAP
 
-int max(int a, int b)
+
+struct publickeydb *publickeys = 0;
+struct maildb *mail = 0;
+
+
+#include "tcp.c"
+
+
+struct tcp_ondata_handler_result tcp_ondata_handler(bytes buffer)
 {
-	return a > b ? a : b;
-}
+	struct http_request req = http_parse_request(buffer);
 
-void http_ondata(struct http_connection *http)
-{
-	ssize_t len = recv(http->socket,
-			   http->buffer.as_void + http->buffer.len,
-			   4096 - http->buffer.len, 0);
 
-	if (len == 0) {
-		http->onclose(http);
-	} else if (len < 0) {
-		debug("Read error! %s", strerror(errno));
-		http->onclose(http);
-	} else {
-		http->buffer.len += len;
-
-		bfound f = bfind(http->buffer, Bs("\r\n\r\n"));
-
-		if (f.found.len == 0) {
-			debug("Partial http header.");
-			return;
-		}
-
-		bytes header = f.before;
-		bytes body = f.after;
-
-		if (http->buffer.as_char[0] == 'G') {
-			f = bfind(header, Bs(" "));
-			f = bfind(f.after, Bs(" "));
-
-			bytes requested = f.before;
-
-			requested = bslice(requested, 1, 0);
-			bfound s = bfind(requested, Bs("/"));
+	if(req.method == http_get)
+	{
+		bytes pubkey = bslice(req.addr, 1, 0);
 
 			bytes addrb64 = s.before;
 			bytes tmp = balloc(max(addrb64.len + 4, 33));
@@ -286,27 +197,6 @@ void http_ondata(struct http_connection *http)
 	http->buffer.len = 0;
 }
 
-void httplistener_ondata(struct generic_epoll_object *data)
-{
-	int socket = data->fd;
-	int accepted = accept(socket, 0, 0);
-	debug("Accepting a new connection: %d", accepted);
-	struct http_connection *c = malloc(sizeof(*c));
-	c->socket = accepted;
-	c->ondata = http_ondata;
-	c->onclose = http_onclose;
-	c->buffer.len = 0;
-	c->buffer.as_void = malloc(4096);
-
-	epoll_add(accepted, c);
-}
-
-void httplistener_onclose(struct generic_epoll_object *data)
-{
-	debug("Closing listener socket. %d", data->fd);
-	close(data->fd);
-};
-
 int main(int argc, char **argv)
 {
 /*	
@@ -331,36 +221,8 @@ int main(int argc, char **argv)
 
 	struct cachenode * cachetree = 0;
 */
-	epoll = epoll_create(1);
+	int socket = tcp_socket(8080, tcp_server_ondata, tcp_server_onclose, 0);
 
-	int http = setup_socket(8081, httplistener_ondata,
-				httplistener_onclose);
-
-	int max_events = 1024;
-	struct epoll_event buffer[max_events];
-
-	while (true) {
-		int ready = epoll_wait(epoll, buffer, max_events, -1);
-
-		for (int i = 0; i < ready; i++) {
-			int events = buffer[i].events;
-			int socket = *(int *)buffer[i].data.ptr;
-			struct generic_epoll_object *object =
-			    buffer[i].data.ptr;
-
-			if (events & EPOLLERR) {
-				debug("Error reported: %s", strerror(errno));
-				object->onclose(object);
-			}
-			else if (events & EPOLLIN) {
-				object->ondata(object);
-			}
-			else if (events & EPOLLHUP) {
-				debug("Hangup received on socket %d", socket);
-				object->onclose(object);
-			}
-		}
-	}
-
+	epoll_listen();
 	return 0;
 }

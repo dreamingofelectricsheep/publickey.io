@@ -1,12 +1,16 @@
-VPATH=src
-FLAGS=-std=c11 -lrt
-CC=clang
+VPATH=src:bin
+flags=-std=gnu99
+cc=clang
 
-router: router.c 
-	$(CC) $(FLAGS) -o bin/$@ $^
+all:
+	@echo "To build a specific file, do make filename."
+	
+-include $(patsubst %.o,bin/%.d,$(objs))
 
-mail: mail.c
-	$(CC) $(FLAGS) -o bin/$@ $^
+%: %.c
+	$(cc) $(flags) $($*_flags) -o bin/$* src/$*.c
+	$(cc) -MM $(flags) src/$*.c > bin/$*.d
+
 
 clean:
 	rm bin/*

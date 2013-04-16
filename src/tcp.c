@@ -44,6 +44,14 @@ struct tcp_connection
 
 const size_t tcp_chuck_len = 8192;
 
+struct tcp_ondata_handler_result
+{
+	bytes response;
+	size_t consumed;
+};
+
+struct tcp_ondata_handler_result tcp_ondata_handler(bytes buffer);
+
 void tcp_ondata(struct tcp_connection *tcp)
 {
 	bytes *buffer = tcp->buffer;
@@ -69,6 +77,19 @@ void tcp_ondata(struct tcp_connection *tcp)
 	}
 
 	buffer->len += len;
+
+	struct tcp_ondata_handler_result result =
+		tcp_ondata_handler(*buffer);
+
+	if(result.consumed > 0)
+	{
+		memcpy(bytes->as_void, bytes->as_void + consumed,
+			bytes->len - consumed);
+		bytes->len -= consumed;
+
+		send(tcp->socket, result.response.as_void, result.response.len, 0);
+		bfree(&result.response);
+	}
 
 	return 0;
 }

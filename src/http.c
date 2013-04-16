@@ -1,11 +1,32 @@
 
 
+enum http_method
+{
+	http_get,
+	http_post,
+	http_put,
+	http_head,
+	http_delete
+};
+
+bytes http_method_bytes[] =
+{
+	Bs("GET"),
+	Bs("POST"),
+	Bs("PUT"),
+	Bs("HEAD"),
+	Bs("DELETE"),
+	bvoid
+};
+
 struct http_request 
 {
 	bytes header;
 	bytes payload;
 	bytes addr;
+	enum http_method method;
 };
+
 
 enum http_result 
 {
@@ -67,46 +88,59 @@ bytes http_extract_param(bytes header, bytes field)
 
 struct http_request http_parse_request(bytes buffer)
 {
-	write(0, buffer.as_void, buffer.len);
-
 	bfound f = bfind(buffer, Bs("\r\n\r\n"));
 
 	if (f.found.len == 0) 
 	{
 		debug("Partial http header.");
 
-		return (struct http_request) {
+		return (struct http_request)
+		{
 			.addr = (bytes) bvoid
 		};
 	}
 
-	struct http_request request = {
+	struct http_request request =
+	{
 		.header = f.before,
 		.payload = f.after,
 	};
 
-	f = bfind(request.header, Bs("Content-Length: "));
+	bytes content_len_str = http_extract_param(request.header,
+		Bs("Content-Length"));
 
-	if (f.found.len > 0) {
-		f = bfind(f.after, Bs("\r\n"));
+	if (content_length_str.len > 0)
+	{
+		int content_len = btoi(content_len_str);
 
-		int contentlen = btoi(f.before);
+		if (content_len != request.payload.len)
+		{
+			debug("Partial body received. %lu "
+				"out of %d bytes available.",
+			    request.payload.len, content_len);
 
-		if (contentlen != request.payload.len) {
-			debug
-			    ("Partial body received. %lu out of %d bytes available.",
-			     request.payload.len, contentlen);
-
-			return (struct http_request) {
+			return (struct http_request)
+			{
 				.addr = bvoid
 			};
 		}
 	}
 
 	f = bfind(request.header, Bs(" "));
+	bytes method = f.before;
+
 	f = bfind(f.after, Bs(" "));
 
 	request.addr = f.before;
+
+	for(int i = 0; http_method_bytes[i].len != 0; i++)
+	{
+		if(bsame(http_method_bytes[i], method) == 0)
+		{
+			request.method = i;
+			break;
+		}
+	}
 
 	return request;
 }
