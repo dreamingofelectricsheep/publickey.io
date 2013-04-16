@@ -1,3 +1,6 @@
 [submodule "html/tags"]
 	path = html/tags
 	url = git@github.com:dreamingofelectricsheep/tags.js.git
+[submodule "openpgp"]
+	path = openpgp
+	url = https://github.com/openpgpjs/openpgpjs.git
