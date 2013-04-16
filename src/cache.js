@@ -1,11 +1,11 @@
 var http = require('http'),
-	packet = require('./packet.js'),
-	armor = require('./armor.js')
+	pgp = require('./openpgp.js')
 
 	
 
 var by_fingerprint = {},
 	mail = {}
+
 
 http.createServer(function (req, res)
 	{
@@ -15,9 +15,9 @@ http.createServer(function (req, res)
 			req.addListener('data', function(chunk) { data += chunk })
 			req.addListener('end', function()
 				{
-					var raw = armor.dearmor(data).openpgp
-					console.log(raw)
-					var p = packet.openpgp_packet.read_packet(raw, 0, raw.length)
+					var raw = pgp.openpgp_encoding_deArmor(data.replace(/\r/g, ''))
+						.openpgp
+					var p = pgp.openpgp_packet.read_packet(raw, 0, raw.length)
 					console.log(p)
 				})
 		}
