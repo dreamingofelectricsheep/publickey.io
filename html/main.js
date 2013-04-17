@@ -26,23 +26,20 @@ return function()
 module('view_keys', function(tags, view_public_key) {
 return function()
 {
-	var panel = tags.div({ class: 'overlay' },
-		tags.div({ name: 'mgr', class: 'box' }))
+	var panel = tags.div({ class: 'box' },
+			tags.div({ name: 'close', class: 'close-button' }, 'Close'))
 
-	var close = tags.div({ class: 'close-button' }, 'Close')
-	close.onclick = function()
+	panel.$close.onclick = function()
 	{
-		panel.parentElement.removeChild(panel)
+		panel.parentElement.parentElement.removeChild(panel.parentElement)
 	}
-
-	panel.$mgr.appendChild(close)
 
 	var key = openpgp.keyring.privateKeys[0]
 
-	if(key != undefined)
+	var view_key = function(key)
 	{
-		panel.$mgr.appendChild(tags.div({ class: 'armored' },
-			key.obj.extractPublicKey()))
+		var armored = tags.div({ class: 'armored' },
+			key.obj.extractPublicKey())
 
 		var button = tags.div({ class: 'button' }, 'Discard this key')
 		button.onclick = function()
@@ -50,11 +47,45 @@ return function()
 			openpgp.keyring.removePrivateKey(0)
 		}
 
-		panel.$mgr.appendChild(button)
+		return tags.div({}, armored, button)
 	}
-	else
+
+	var view_generate = function()
 	{
-		panel.$mgr.appendChild(tags.div({ style: 'text-align: center;' },
+		var form = tags.div({}, tags.div({}, 'Pick an email address.'),
+			tags.input({ 
+				name: 'addr',
+				type: 'text', 
+				placeholder: 'fancymail',
+				style: { textAlign: 'right' }}),
+			tags.span({ style: { color: '#CCD7EB' }}, '@publickey.io'))
+			
+		var generate = tags.div({ class: 'button' }, 'Generate')
+
+		generate.onclick = function()
+		{
+			this.innerHTML = ''
+
+			tags.append(this, tags.div({ class: 'icon-spinner icon-spin' }),
+				'Generating...')
+
+
+			var key = openpgp.generate_key_pair(1, 2048, 
+				'<' + form.$addr.value + '@publickey.io>', '')
+			openpgp.keyring.importPrivateKey(key.privateKeyArmored, '')
+			openpgp.keyring.importPublicKey(key.publicKeyArmored)
+			openpgp.keyring.store()
+
+			this.innerHTML = ''
+			tags.append(this, 'Done!')
+		}
+
+		return tags.div({}, form, generate)
+	}
+
+	var view_keygen = function()
+	{
+		var icon = tags.div({ style: 'text-align: center;' },
 			tags.div({ 
 				class: 'icon-key icon-4x', 
 				style:
@@ -62,50 +93,38 @@ return function()
 					display: 'block',
 					marginBottom: '30px'
 				}}),
-			'You don\'t have a key. Without one, you can\'t send secure messages.'))
+			'You don\'t have a key. Without one, you can\'t send secure messages.')
 
 		var generate = tags.div({ class: 'button' }, 'Generate a new key')
 		var importkey = tags.div({ class: 'button' }, 'Import')
 
-		panel.$mgr.appendChild(generate)
-		
 		generate.onclick = function()
 		{
-			panel.$mgr.innerHTML = ''
+			panel.removeChild(this.parentElement)
 
-			panel.$mgr.appendChild(tags.div({}, tags.div(
-				{ 
-					class: 'icon-spinner icon-spin icon-4x',
-					style: 
-					{
-						display: 'block',
-						margin: '40px 150px'
-					}
-				}),
-				'This might take a couple of minutes.'))
-
-			setTimeout(function()
-				{
-					var key = openpgp.generate_key_pair(1, 2048, '', '')
-					openpgp.keyring.importPrivateKey(key.privateKeyArmored, '')
-					openpgp.keyring.importPublicKey(key.publicKeyArmored)
-					openpgp.keyring.store()
-
-					panel.parentElement.removeChild(panel)
-				}, 10)
+			panel.appendChild(view_generate())
 		}
 
-
-		panel.$mgr.appendChild(importkey)
 
 		importkey.onclick = function()
 		{
 
 		}
+
+		return tags.div({}, icon, generate, importkey)
+	}
+
+	if(key != undefined)
+	{
+		panel.appendChild(view_key(key))
+	}
+	else
+	{
+		panel.appendChild(view_keygen())
 	}
 
 
-	return panel
+	return tags.div({ class: 'overlay' }, panel)
 }
 })
 
