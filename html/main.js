@@ -1,6 +1,29 @@
 
+module('view_public_key', function(tags) {
+return function()
+{
+	var box = tags.div(
+		{ 
+			class: 'box',
+			style:
+			{
+				background: white
+			}
+		},
+		tags.div({ name: 'close', class: 'close-button' }, 'Close'),
+		tags.div({ class: 'armored', },
+			openpgp.keyring.publicKeys[0].armored))
 
-module('view_keys', function(tags) {
+	box.$close.onclick = function()
+	{
+		panel.parentElement.removeChild(panel)
+	}
+
+	return box
+}
+})
+
+module('view_keys', function(tags, view_public_key) {
 return function()
 {
 	var panel = tags.div({ class: 'overlay' },
@@ -19,7 +42,7 @@ return function()
 	if(key != undefined)
 	{
 		panel.$mgr.appendChild(tags.div({ class: 'armored' },
-			key.armored))
+			key.obj.extractPublicKey()))
 
 		var button = tags.div({ class: 'button' }, 'Discard this key')
 		button.onclick = function()
@@ -32,18 +55,52 @@ return function()
 	else
 	{
 		panel.$mgr.appendChild(tags.div({ style: 'text-align: center;' },
-			'You have no keys! Without a key, you can not send secure messages.'))
+			tags.div({ 
+				class: 'icon-key icon-4x', 
+				style:
+				{
+					display: 'block',
+					marginBottom: '30px'
+				}}),
+			'You don\'t have a key. Without one, you can\'t send secure messages.'))
 
-		var button = tags.div({ class: 'button' }, 'Generate a new key')
+		var generate = tags.div({ class: 'button' }, 'Generate a new key')
+		var importkey = tags.div({ class: 'button' }, 'Import')
 
-		panel.$mgr.appendChild(button)
+		panel.$mgr.appendChild(generate)
 		
-		button.onclick = function()
+		generate.onclick = function()
 		{
-			var key = openpgp.generate_key_pair(1, 512, '', '')
-			openpgp.keyring.importPrivateKey(key.privateKeyArmored, '')
-			openpgp.keyring.importPublicKey(key.publicKeyArmored)
-			openpgp.keyring.store()
+			panel.$mgr.innerHTML = ''
+
+			panel.$mgr.appendChild(tags.div({}, tags.div(
+				{ 
+					class: 'icon-spinner icon-spin icon-4x',
+					style: 
+					{
+						display: 'block',
+						margin: '40px 150px'
+					}
+				}),
+				'This might take a couple of minutes.'))
+
+			setTimeout(function()
+				{
+					var key = openpgp.generate_key_pair(1, 2048, '', '')
+					openpgp.keyring.importPrivateKey(key.privateKeyArmored, '')
+					openpgp.keyring.importPublicKey(key.publicKeyArmored)
+					openpgp.keyring.store()
+
+					panel.parentElement.removeChild(panel)
+				}, 10)
+		}
+
+
+		panel.$mgr.appendChild(importkey)
+
+		importkey.onclick = function()
+		{
+
 		}
 	}
 
