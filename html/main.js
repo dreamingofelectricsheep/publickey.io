@@ -70,14 +70,27 @@ return function()
 				'Generating...')
 
 
-			var key = openpgp.generate_key_pair(1, 2048, 
+			var key = openpgp.generate_key_pair(1, 512, 
 				'<' + form.$addr.value + '@publickey.io>', '')
-			openpgp.keyring.importPrivateKey(key.privateKeyArmored, '')
-			openpgp.keyring.importPublicKey(key.publicKeyArmored)
-			openpgp.keyring.store()
 
-			this.innerHTML = ''
-			tags.append(this, 'Done!')
+			var req = new XMLHttpRequest()
+			req.open('PUT', '/pks')
+			var self = this
+			req.onreadystatechange = function()
+			{
+				if(this.readyState == 4)
+				{
+					openpgp.keyring.importPrivateKey(key.privateKeyArmored, '')
+					openpgp.keyring.importPublicKey(key.publicKeyArmored)
+					openpgp.keyring.store()
+
+					self.innerHTML = ''
+					tags.append(self, 'Done!')
+				}
+			}
+
+			req.send(key.publicKeyArmored)
+
 		}
 
 		return tags.div({}, form, generate)
@@ -424,22 +437,38 @@ return function()
 	{
 		var mail = editor.$text.value,
 			priv_key = openpgp.keyring.privateKeys[0].obj,
-			pub_key = openpgp.read_publicKey(editor.$pubkey.value)
+			pub_keys = openpgp.read_publicKey(editor.$pubkey.value)
 
-		if (pub_key < 1)
+		if (pub_keys < 1)
 		{
 			alert('Error processing the public key!')
 			return
 		}
 
+		pub_keys.push(openpgp.read_publicKey(
+			openpgp.keyring.privateKeys[0].obj.extractPublicKey())[0])
+
 		priv_key.decryptSecretMPIs('')
 
 		var encrypted = openpgp.write_signed_and_encrypted_message(
 			priv_key,
-			pub_key,
+			pub_keys,
 			mail)
 
-		console.log(openpgp_encoding_deArmor(encrypted))
+		var req = new XMLHttpRequest()
+		req.open('PUT', '/mail')
+		req.onreadystatechange = function()
+		{
+			if(this.readyState == 4)
+			{
+				alert('done')
+			}
+		}
+
+		req.send(encrypted)
+
+
+		console.log(encrypted)
 	}
 
 	return editor

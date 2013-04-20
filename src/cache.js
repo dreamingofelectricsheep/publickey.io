@@ -1,6 +1,7 @@
 var http = require('http'),
 	url = require('url'),
-	pgp = require('./openpgp.js')
+	pgp = require('./openpgp.js'),
+	fs = require ('fs')
 
 	
 
@@ -17,37 +18,70 @@ http.createServer(function (req, res)
 		{
 			if(req.method == 'PUT')
 			{
-				var pubkey = ''
-				req.addListener('data', function(chunk) { pubkey += chunk })
+				var armored = ''
+				req.addListener('data', function(chunk) { armored += chunk })
 				req.addListener('end', function()
 					{
-						pubkey = pgp.openpgp_encoding_deArmor(pubkey.replace(/\r/g, ''))
-							.openpgp
-						pubkey = pgp.openpgp_packet.read_packet(pubkey, 0, pubkey.length)
-						console.log(p)
+						try
+						{
+							var key = pgp.openpgp.read_publicKey(armored)[0]
+
+							var email = key.userIds[0].text
+
+
+							pubkeys[email] = armored
+
+							res.writeHead(200)
+						}
+						catch(e)
+						{
+							res.writeHead(404)
+						}
+						
+						res.end()
 					})
 			}
 
-			res.writeHead(200, {'Content-Type': 'text/plain'})
-			res.end('Hello World\n')
 		}
 		else if(requrl.pathname == '/pks/lookup')
 		{
 			if(req.method == 'GET')
 			{
-				if(requrl.query.op != 'get' || 
+				if(requrl.query.op == 'index' || 
 					requrl.query.search.substr(0, 2) == '0x')
 				{
 					res.writeHead(501)
 					res.end()
 				}
 
-				var email = requrl.query.search
+				var email = '<' + requrl.query.search + '@publickey.io>'
+
+				res.writeHead(200, {'Content-Type': 'text/plain'})
+				res.end(pubkeys[email])
 			}
+		}
+		else if(requrl.pathname == '/mail')
+		{
+			if(req.method == 'PUT')
+			{
+				var packets= ''
+				req.addListener('data', function(chunk) { packets += chunk })
+				req.addListener('end', function()
+					{
+						packets = pgp.openpgp.read_message(packets)
+
+						res.writeHead(200, {'Content-Type': 'text/plain'})
+						res.end('Hello World\n')
+					})
+			}
+
 		}
 		else
 		{
-			res.writeHead(200, {'Content-Type': 'text/plain'})
-			res.end('Hello World\n')
+			fs.readFile('../html' + requrl.pathname, function(err, data)
+				{
+					res.writeHead(200, {'Content-Type': 'text/html'})
+					res.end(data)
+				})
 		}
 	}).listen(1337)
