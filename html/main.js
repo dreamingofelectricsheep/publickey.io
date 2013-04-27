@@ -58,7 +58,7 @@ return function()
 				type: 'text', 
 				placeholder: 'fancymail',
 				style: { textAlign: 'right' }}),
-			tags.span({ style: { color: '#CCD7EB' }}, '@publickey.io'))
+			tags.span({ class: 'light-text' }, '@publickey.io'))
 			
 		var generate = tags.div({ class: 'button' }, 'Generate')
 
@@ -416,11 +416,25 @@ return function(list)
 
 	each(list, function(email)
 		{
-			view.appendChild(tags.tr({},
-				tags.td({}, email.id),
-				tags.td({}, email.date),
-				tags.td({}, email.peer)))
+			var dir, peer;
+			if(email.from != undefined) {
+
+				dir = 'from '
+				peer = email.from
+			}
+			else {
+				dir = 'to'
+				peer = email.to
+			}
+
+			tags.append(view, tags.tr({},
+				tags.td({ style: { width: '150px' } }, 
+					tags.div({ style: { fontSize: '0.8em' } }, dir),
+					tags.div({ style: { fontSize: '1.5em' } }, peer),
+					tags.div({ style: { fontSize: '0.5em' }, alt: email.date.toString() }, email.date.toDateString())),
+				tags.td({ style: { color: '#827887', height: '3em' } }, email.body)))
 		})
+
 	return view
 }
 })
@@ -487,14 +501,39 @@ openpgp.init()
 
 
 
-body.appendChild(view_contacts())
-body.appendChild(view_new_email())
 
-var emails = JSON.parse(localStorage['emails_all'])
 
-body.appendChild(view_all_emails())
+//var emails = JSON.parse(localStorage['emails_all'])
+var emails = [];
 
+for(var i = 0; i < 100; i++) {
+	emails.push({
+		to: 'Sean Bean',
+		body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' +
+		 'Fusce mollis, mauris eu ullamcorper rutrum, enim urna aliquam nisi,' +
+		 'in tempus nulla erat ut libero. Pellentesque tempor dolor nec sem ornare' +
+		 'in varius sapien gravida. Ut gravida auctor orci et pulvinar. Nulla facilisi.',
+		date: new Date(),
+	})		 
+}
+
+body.appendChild(view_all_emails(emails))
+
+
+var colors = {
+	darkmedium: '#260A33',
+	dark: '#1E0729',
+	medium: '#AE67CF',
+	light: '#E8CEF5'
+}
+
+var style = document.getElementsByTagName('style')[0]
+
+
+each(colors, function(v, k) {
+	var r = new RegExp(k, 'g')
+	style.innerHTML = style.innerHTML.replace(r, v)
 })
 
 
-
+})
