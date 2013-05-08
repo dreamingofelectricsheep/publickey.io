@@ -26,12 +26,12 @@ return function()
 module('view_keys', function(tags, view_public_key) {
 return function()
 {
-	var panel = tags.div({ class: 'box' },
-			tags.div({ name: 'close', class: 'close-button' }, 'Close'))
+	var panel = tags.fragment({},
+			tags.div({ name: 'back', class: 'back-button' }, '« Back'))
 
-	panel.$close.onclick = function()
+	panel.$back.onclick = function()
 	{
-		panel.parentElement.parentElement.removeChild(panel.parentElement)
+		history.back()
 	}
 
 	var key = openpgp.keyring.privateKeys[0]
@@ -141,14 +141,14 @@ return function()
 }
 })
 
-module('view_key_icon', function(tags, view_keys) {
+module('view_key_icon', function(tags, state) {
 return function() 
 {
 	var icon = tags.div({ class: 'key icon-key icon-2x' })
 
 	icon.onclick = function()
 	{
-		this.parentElement.appendChild(view_keys())
+		state('view_keys')
 	}
 
 	return icon
@@ -412,10 +412,13 @@ email.prototype =
 module('view_all_emails', function(tags, view_key_icon) {
 return function()
 {
+
 	var list = JSON.parse(localStorage['emails'])
 	var view = tags.table({})
 
-	tags.append(view, view_key_icon())
+	var page = tags.fragment({}, 
+		view_key_icon(),
+		view)
 
 	each(list, function(email)
 		{
@@ -451,7 +454,7 @@ return function()
 				tags.td({ style: { color: '#827887' } }, email.body)))
 		})
 
-	return view
+	return page
 }
 })
 
@@ -508,18 +511,17 @@ return function()
 
 module('state', function(require, tags) {
 
-function switch_state(view, push)
+function switch_state(view)
 {
 	while(tags.body.firstChild)
 		tags.body.removeChild(tags.body.firstChild)
 
 	tags.append(tags.body, require(view)())
 
-	if(push)
-		if(history.state == null)
-			history.replaceState(view, '')
-		else
-			history.pushState(view, '')
+	if(history.state == null)
+		history.replaceState(view, '')
+	else
+		history.pushState(view, '')
 }
 
 window.onpopstate = function()
