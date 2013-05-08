@@ -409,13 +409,18 @@ email.prototype =
 
 })
 
-module('view_all_emails', function(tags) {
-return function(list)
+module('view_all_emails', function(tags, view_key_icon) {
+return function()
 {
+	var list = JSON.parse(localStorage['emails'])
 	var view = tags.table({})
+
+	tags.append(view, view_key_icon())
 
 	each(list, function(email)
 		{
+			email.date = new Date(email.date)
+
 			var dir, peer;
 			if(email.from != undefined) {
 
@@ -427,12 +432,23 @@ return function(list)
 				peer = email.to
 			}
 
-			tags.append(view, tags.tr({},
+			var attachment = undefined;
+			
+			if(Math.random() < 0.2)
+				attachment = tags.div({ 
+					title: 'This message has attachments',
+					class: 'icon-paper-clip icon-large', 
+					style: { display: 'inline-block', padding: '5px' }
+				})
+
+			tags.append(view, tags.tr({ style: { height: '130px', }},
 				tags.td({ style: { width: '150px' } }, 
 					tags.div({ style: { fontSize: '0.8em' } }, dir),
 					tags.div({ style: { fontSize: '1.5em' } }, peer),
-					tags.div({ style: { fontSize: '0.5em' }, alt: email.date.toString() }, email.date.toDateString())),
-				tags.td({ style: { color: '#827887', height: '3em' } }, email.body)))
+					tags.div({ style: { fontSize: '0.5em' }, 
+						title: email.date.toString() }, email.date.toDateString()),
+					attachment),
+				tags.td({ style: { color: '#827887' } }, email.body)))
 		})
 
 	return view
@@ -490,25 +506,52 @@ return function()
 })
 
 
-module('entry', function(view_contacts, view_card, dom,
-	view_all_emails, view_new_email, view_key_icon) {
+module('state', function(require, tags) {
+
+function switch_state(view, push)
+{
+	while(tags.body.firstChild)
+		tags.body.removeChild(tags.body.firstChild)
+
+	tags.append(tags.body, require(view)())
+
+	if(push)
+		if(history.state == null)
+			history.replaceState(view, '')
+		else
+			history.pushState(view, '')
+}
+
+window.onpopstate = function()
+{
+	var state = history.state
+
+	if(state == null) return
+		
+	switch_state(state)
+}
+
+return switch_state
+})
+
+
+
+module('entry', function(dom, state) {
 
 var body = dom.body
 
-body.appendChild(view_key_icon())
 
 openpgp.init()
 
 
 
-
-
 //var emails = JSON.parse(localStorage['emails_all'])
-var emails = [];
+var emails = []
+var names = ['Sean Bean', 'Tony Stark', 'The Incredible Hulk', 'Anthony Hopkins']
 
 for(var i = 0; i < 100; i++) {
 	emails.push({
-		to: 'Sean Bean',
+		to: names[Math.floor(names.length * Math.random())],
 		body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' +
 		 'Fusce mollis, mauris eu ullamcorper rutrum, enim urna aliquam nisi,' +
 		 'in tempus nulla erat ut libero. Pellentesque tempor dolor nec sem ornare' +
@@ -517,7 +560,11 @@ for(var i = 0; i < 100; i++) {
 	})		 
 }
 
-body.appendChild(view_all_emails(emails))
+localStorage.emails = JSON.stringify(emails)
+
+
+state('view_all_emails')
+
 
 
 var colors = {
@@ -527,7 +574,7 @@ var colors = {
 	light: '#E8CEF5'
 }
 
-var style = document.getElementsByTagName('style')[0]
+var style = document.getElementById('style')
 
 
 each(colors, function(v, k) {
