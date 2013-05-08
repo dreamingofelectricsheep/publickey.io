@@ -461,16 +461,24 @@ return function()
 module('view_new_email', function(tags, model_email) {
 return function()
 {
-	var editor = tags.div({},
-		tags.textarea({ name: 'pubkey' }),
-		tags.textarea({ name: 'text' }),
-		tags.input({ name: 'send', type: 'button', value: 'Send' }))
 
-	editor.$send.onclick = function()
+
+	var page = tags.fragment({},
+		tags.div({ name: 'back', class: 'back-button' }, '« Back'),
+		tags.textarea({ name: 'pubkey', style: { marginTop: '150px' } }),
+		tags.textarea({ name: 'text' }),
+		tags.div({ name: 'send', class: 'button' },'Send' ))
+
+	page.$back.onclick = function()
 	{
-		var mail = editor.$text.value,
+		history.back()
+	}
+
+	page.$send.onclick = function()
+	{
+		var mail = page.$text.value,
 			priv_key = openpgp.keyring.privateKeys[0].obj,
-			pub_keys = openpgp.read_publicKey(editor.$pubkey.value)
+			pub_keys = openpgp.read_publicKey(page.$pubkey.value)
 
 		if (pub_keys < 1)
 		{
@@ -504,7 +512,7 @@ return function()
 		console.log(encrypted)
 	}
 
-	return editor
+	return page
 }
 })
 
@@ -565,7 +573,8 @@ for(var i = 0; i < 100; i++) {
 localStorage.emails = JSON.stringify(emails)
 
 
-state('view_all_emails')
+//state('view_all_emails')
+state('view_new_email')
 
 
 
