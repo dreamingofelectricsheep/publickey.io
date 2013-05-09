@@ -545,6 +545,60 @@ return switch_state
 })
 
 
+module('view_splash', function(tags) { return function() {
+
+var page = tags.div({ style: {
+		display: 'inline-block',
+		width: '700px'
+	}},
+	tags.div({ style: {
+		display: 'block',
+		margin: '50px',
+	}, class: 'icon-key icon-4x' }),
+	tags.div({ style:
+		{
+			margin: '20px',
+			fontSize: '2em'
+		} },
+		'publickey.io'),
+	tags.div({ style:
+		{
+			color: '#E8CEF5',
+			fontSize: '0.8em'
+		} },
+		'OpenPGP encrypted email right in your browser.'),
+	tags.div({ style: {
+			color: '#E8CEF5',
+		margin: '40px',
+		textAlign: 'justify'
+	}}, 'Publickey.io is an effort to create an easy-to-use, no-fuss-required ' +
+		"email encryption solution that puts focus on accessibility first. Let's be honest - " +
+		'the "absolute security" approach to cryptography has failed in case of email. ' +
+		'Currently available tools are confusing and difficult to use; scaring users with ' +
+		'bit lengths, alien acronyms and incomprehensible choices. We aim to change that.'),
+	tags.div({ style: {
+			color: '#E8CEF5',
+			fontSize: '0.9em'
+		}}, 'Send me a notification when publickey.io launches!'),
+	tags.input({ style: {
+	}, name: 'input', type: 'text', placeholder: 'johndoe@example.com' }),
+	tags.div({ class: 'button', name: 'button' }, 
+		'Send me a notification!'))
+
+page.$button.onclick = function() {
+	var email = page.$input.value
+	var req = new XMLHttpRequest()
+	req.open('POST', '/storeemail')
+	req.send(email)
+
+	page.removeChild(page.$input)
+	this.onclick = undefined;
+	this.innerHTML = 'Thanks for showing interest!'
+}
+	
+
+return page } })
+
 
 module('entry', function(dom, state) {
 
@@ -573,13 +627,16 @@ for(var i = 0; i < 100; i++) {
 localStorage.emails = JSON.stringify(emails)
 
 
+//if(location.origin.indexOf('publickey.io') != -1)
+	state('view_splash')
 //state('view_all_emails')
-state('view_new_email')
+//else
+//	state('view_new_email')
 
 
 
 var colors = {
-	darkmedium: '#260A33',
+	darkmedium: '#533B5E',
 	dark: '#1E0729',
 	medium: '#AE67CF',
 	light: '#E8CEF5'

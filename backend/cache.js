@@ -76,9 +76,21 @@ http.createServer(function (req, res)
 			}
 
 		}
+		else if(requrl.pathname == '/storeemail')
+		{
+			var email= ''
+			req.addListener('data', function(chunk) { email += chunk })
+			req.addListener('end', function()
+				{
+					fs.appendFile('emails.txt', email.substr(0, 255) + '\n')
+
+					res.writeHead(200, {'Content-Type': 'text/plain'})
+					res.end()
+				})
+		}
 		else
 		{
-			fs.readFile('../html' + requrl.pathname, function(err, data)
+			fs.readFile('../frontend' + requrl.pathname, function(err, data)
 				{
 					res.writeHead(200, {'Content-Type': 'text/html'})
 					res.end(data)
