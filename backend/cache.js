@@ -1,7 +1,8 @@
 var http = require('http'),
 	url = require('url'),
 	pgp = require('./openpgp.js'),
-	fs = require ('fs')
+	fs = require ('fs'),
+	browserify = require('browserify')
 
 	
 
@@ -90,10 +91,17 @@ http.createServer(function (req, res)
 		}
 		else
 		{
-			fs.readFile('../frontend' + requrl.pathname, function(err, data)
-				{
-					res.writeHead(200, {'Content-Type': 'text/html'})
-					res.end(data)
-				})
+			if(requrl.pathname.indexOf('.js') != -1) {
+				var b = browserify()
+				b.add('../frontend')
+				b.bundle({ debug: true }).pipe(res)
+			} else {
+
+				fs.readFile('../frontend' + requrl.pathname, function(err, data)
+					{
+						res.writeHead(200, {'Content-Type': 'text/html'})
+						res.end(data)
+					})
+			}
 		}
 	}).listen(1337)
