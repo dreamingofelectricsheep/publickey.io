@@ -47,7 +47,7 @@ for(var i = 0; i < 100; i++) {
 	})		 
 }
 
-localStorage.emails = JSON.stringify(emails)
+window.emails = emails
 
 
 
@@ -75,6 +75,6 @@ window.onload = function() {
 
 
 	//state('view_all_emails')
-	switch_state('emails')
+	switch_state('dashboard')
 }
 
