@@ -1,19 +1,20 @@
 var view = require('./view'),
 	tags = require('./tags')
 
-function switch_state(view_name)
+window.switch_state = function(view_name, data)
 {
 	var body = document.getElementsByTagName('body')[0]
 
 	while(body.firstChild)
 		body.removeChild(body.firstChild)
 
-	tags.append(body, view[view_name]())
+
+	tags.append(body, view[view_name](data))
 
 	if(history.state == null)
-		history.replaceState(view_name, '')
+		history.replaceState({ view: view_name, data: data }, '')
 	else
-		history.pushState(view_name, '')
+		history.pushState({ view: view_name, data: data }, '')
 }
 
 window.onpopstate = function()
@@ -22,7 +23,7 @@ window.onpopstate = function()
 
 	if(state == null) return
 		
-	switch_state(state)
+	switch_state(state.view, state.data)
 }
 
 

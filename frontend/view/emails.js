@@ -4,25 +4,11 @@ module.exports = function()
 {
 
 	var list = window.emails
-	var view = tags.div({ style: {
-				boxShadow: '0 0 30px -5px black',
-				background: 'white',
-				position: 'fixed',
-				left: '20%',
-				top: '0',
-				transition: 'left 1s ease',
-				boxSizing: 'border-box',
-				padding: '1em',
-				width: '80%',
-				height: '100%',
-				overflowY: 'scroll',
-				overflowX: 'hidden'
-		}},
-		tags.table({ style:
+	var view = tags.table({ style:
 			{
 				tableLayout: 'fixed',
 				width: '100%',
-			}}))
+			}})
 
 	each(list, function(email)
 		{
@@ -46,7 +32,7 @@ module.exports = function()
 					class: 'icon-paper-clip icon-large'
 				})
 
-			tags.append(view.firstChild, 
+			tags.append(view, 
 				tags.tr({ style: { color: 'gray', height: '1em' }},
 					tags.td({ style: { width: '1em', color: '#C9C9C9' }}, 
 						tags.span({ class: dir + ' icon-large' })),
@@ -57,14 +43,6 @@ module.exports = function()
 					tags.td({ style: { overflow: 'hidden', color: '#C9C9C9', 
 						whiteSpace: 'nowrap'} }, email.body)))
 		})
-
-	var u, o = function() { view.style.left = '100%'
-		setTimeout(u, 1000) }
-
-	u = function() { view.style.left = '20%'
-		setTimeout(o, 1000) }
-
-//	u()
 
 	return view
 }
