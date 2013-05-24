@@ -5,8 +5,7 @@ window.switch_state = function(view_name, data)
 {
 	var body = document.getElementsByTagName('body')[0]
 
-	while(body.firstChild)
-		body.removeChild(body.firstChild)
+	body.removeChild(body.lastChild)
 
 
 	tags.append(body, view[view_name](data))

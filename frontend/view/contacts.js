@@ -1,25 +1,12 @@
-var tags = require('../tags')
+var tags = require('../tags'),
+	model_contacts = require('../model/contacts.js')
 
 module.exports = function()
 {
 	var add = tags.div({ class: 'button' }, 'Add a new contact')
+	add.onclick = function() { switch_state('edit-contact') }
 
-	var list = window.contacts
-
-	var view = tags.div({ style: {
-				boxShadow: '0 0 30px -5px black',
-				background: 'white',
-				position: 'fixed',
-				left: '20%',
-				top: '0',
-				transition: 'left 1s ease',
-				boxSizing: 'border-box',
-				padding: '1em',
-				width: '80%',
-				height: '100%',
-				overflowY: 'scroll',
-				overflowX: 'hidden'
-		}},
+	var view = tags.div({},
 		add,
 		tags.table({ style:
 			{
@@ -27,14 +14,14 @@ module.exports = function()
 				width: '100%',
 			}}))
 
-	each(list, function(contact)
+	each(model_contacts.list, function(contact)
 		{
 			var key;
 
 			if(contact.key) key = tags.span({ class: 'key-icon', 
 				style: { color: '#80DE66' }})
 
-			tags.append(view.firstChild, 
+			tags.append(view.lastChild, 
 				tags.tr({ style: { color: 'gray', height: '1em' }},
 					tags.td({ style: { color: '#C9C9C9' }}, 
 						contact.name),
