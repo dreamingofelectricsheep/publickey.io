@@ -29,6 +29,11 @@ module.exports = function()
 						contact.email),
 					tags.td({ style: { width: '2em' }}, 
 						key)))
+
+			view.lastChild.lastChild.onclick = function()
+			{
+				switch_state('edit-contact', contact)
+			}
 		})
 
 	return view

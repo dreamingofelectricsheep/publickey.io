@@ -53,28 +53,15 @@ window.emails = emails
 
 
 
-var colors = {
-	darkmedium: '#533B5E',
-	dark: '#1E0729',
-	medium: '#AE67CF',
-	light: '#E8CEF5'
-}
-
-
 
 window.onload = function() {
 
-	var style = document.getElementById('style')
 
 
-	each(colors, function(v, k) {
-		var r = new RegExp(k, 'g')
-		style.innerHTML = style.innerHTML.replace(r, v)
-	})
+	var body = document.getElementsByTagName('body')[0]
+	tags.append(body, view.navbar(), tags.div({}))
 
+	switch_state('emails')
 
-
-	//state('view_all_emails')
-	switch_state('dashboard')
 }
 

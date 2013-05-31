@@ -1,11 +1,9 @@
-var emails = require('./emails.js'),
-	tags = require('../tags')
+var tags = require('../tags')
 
 
 module.exports = function()
 {
-	var page = tags.fragment({}, 
-		tags.ul({ class: 'nav', style:
+	var navbar = tags.ul({ class: 'nav', style:
 			{
 				margin: '0',
 				position: 'fixed',
@@ -17,7 +15,7 @@ module.exports = function()
 				boxShadow: '0 0 10px 0 silver',
 			} },
 			tags.li({ class: 'icon-key' }),
-			tags.li({ style:
+			tags.li({ name: 'send', style:
 			{
 				textShadow: '0 0 0.5em #694113',
 				boxShadow: '0 0 0.5em 0 #496E37',
@@ -28,10 +26,10 @@ module.exports = function()
 			} }, 'Send'),
 			tags.li({ name: 'emails' }, 'Mailbox'),
 			tags.li({ name: 'contacts' }, 'Contacts'),
-			tags.li({}, 'Configuration')),
-		emails())
+			tags.li({}, 'Configuration'))
+		
 	
-	each(page.firstChild.children, function(child)
+	each(navbar.children, function(child)
 		{
 			child.onclick = function()
 			{
@@ -40,6 +38,6 @@ module.exports = function()
 		})
 
 
-	return page
+	return navbar
 }
 

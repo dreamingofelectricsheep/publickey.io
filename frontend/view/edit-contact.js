@@ -12,7 +12,7 @@ module.exports = function(contact)
 	{
 	inputs = 
 	{
-		name: input({ type: 'text', placeholder: 'John Doe' }),
+		name: input({ type: 'text', autocapitalize: 'on', placeholder: 'John Doe' }),
 		email: input({ type: 'email', 
 				placeholder: 'email@example.com' }),
 		tags: input({ type: 'text', placeholder: 'friends, family, business' }),
